@@ -1,7 +1,7 @@
 The Newsapps Boundary Service
 =============================
 
-The Boundary Service is a ready-to-deploy system for aggregating regional boundary data (from shapefiles) and republishing that data via a RESTful JSON API.  It is packaged as a pluggable Django application so that it can be easily integrated into another project, or it may also be used with the prepackaged `boundaryservice-demo <https://github.com/newsapps/boundaryservice-demo>`_.
+The Boundary Service is a ready-to-deploy system for aggregating regional boundary data (from shapefiles) and republishing that data via a RESTful JSON API.  It is packaged as a pluggable Django application so that it can be easily integrated into another project, or it may also be used with the prepackaged `boundaryservice demo site <https://github.com/newsapps/boundaryservice>`_.
 
 This project is aimed at providing a simple service for newsrooms, open-government hackers and others to centralize and build on regional GIS data.  You can see the instance we've configured for Chicago & Illinois, along with much more detailed information about the API at `http://boundaries.tribapps.com/ <http://boundaries.tribapps.com/>`_.
 
@@ -14,7 +14,7 @@ To install django-boundaryservice use pip::
 
 h2. Using the shapefile loader
 
-By default the shapefile loader will expect you to have created the path "data/shapefiles" relative to your manage.py script. Shapefiles and your definitions.py go into this folder. See `boundaryservice-demo <https://github.com/newsapps/boundaryservice-demo>`_ for a complete example. You may also override the default location by passing the "-d" flag to the command::
+By default the shapefile loader will expect you to have created the path "data/shapefiles" relative to your manage.py script. Shapefiles and your definitions.py go into this folder. See `boundaryservice demo site <https://github.com/newsapps/boundaryservice>`_ for a complete example. You may also override the default location by passing the "-d" flag to the command::
 
     python manage.py load_shapefiles -d data_dir
 
