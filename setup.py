@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name = "django-boundaryservice",
-    version = "0.1.1",
+    version = "0.1.2",
     description = "A reusable system for aggregating and providing API access to regional boundary data.",
     #long_description = open('README.rst').read(),
     author='Christopher Groskopf',
