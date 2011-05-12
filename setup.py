@@ -6,7 +6,7 @@ setup(
     name = "django-boundaryservice",
     version = "0.1.1",
     description = "A reusable system for aggregating and providing API access to regional boundary data.",
-    long_description = open('README.rst').read(),
+    #long_description = open('README.rst').read(),
     author='Christopher Groskopf',
     author_email='staringmonkey@gmail.com',
     url='http://blog.apps.chicagotribune.com/',
