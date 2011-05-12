@@ -38,7 +38,7 @@ As a matter of best practice when shapefiles have been acquired from government 
 Credits
 =======
 
-The Boundary Service is a product of the <a href="http://blog.apps.chicagotribune.com">News Applications team</a> at the Chicago Tribune. Core development was done by <a href="http://twitter.com/onyxfish">Christopher Groskopf</a> and <a href="http://twitter.com/ryannagle">Ryan Nagle</a>.
+The Boundary Service is a product of the `News Applications team <http://blog.apps.chicagotribune.com>`_ at the Chicago Tribune. Core development was done by `Christopher Groskopf <http://twitter.com/onyxfish>`_ and `Ryan Nagle <http://twitter.com/ryannagle>`_.
 
 License
 =======
