@@ -29,7 +29,7 @@ Of particular note amongst the fields are the 'ider' and 'namer' properties. The
 
 Once definitions.py has been saved the new shapefile can be loaded by running::
 
-    python manage.py load_shapefiles -o BoundaryKindWithoutWhitespace</pre>
+    python manage.py load_shapefiles -o BoundaryKindWithoutWhitespace
 
 The "-c" parameter can also be passed to clear existing boundaries of only the specified type and then load the data. Multiple boundaries can be cleared and loaded by passing a comma-separated list to "-o".
 
