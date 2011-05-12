@@ -7,14 +7,16 @@ This project is aimed at providing a simple service for newsrooms, open-governme
 
 Installation
 ============
-::
+
+To install django-boundaryservice use pip::
+
     pip install django-boundaryservice
 
 h2. Using the shapefile loader
 
-By default the shapefile loader will expect you to have created the path "data/shapefiles" relative to your manage.py script. Shapefiles and your definitions.py go into this folder. See `boundaryservice-demo <https://github.com/newsapps/boundaryservice-demo>`_ for a complete example. You may also override the default location by passing the "-d" flag to the command:
+By default the shapefile loader will expect you to have created the path "data/shapefiles" relative to your manage.py script. Shapefiles and your definitions.py go into this folder. See `boundaryservice-demo <https://github.com/newsapps/boundaryservice-demo>`_ for a complete example. You may also override the default location by passing the "-d" flag to the command::
 
-<pre>python manage.py load_shapefiles -d data_dir</pre>
+    python manage.py load_shapefiles -d data_dir
 
 Adding data
 ===========
