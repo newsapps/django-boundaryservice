@@ -10,7 +10,7 @@ from boundaryservice.tastyhacks import SluggedResource
 from boundaryservice.throttle import AnonymousThrottle
 
 class BoundarySetResource(SluggedResource):
-    boundaries = fields.ToManyField('boundaries.resources.BoundaryResource', 'boundaries')
+    boundaries = fields.ToManyField('boundaryservice.resources.BoundaryResource', 'boundaries')
 
     class Meta:
         queryset = BoundarySet.objects.all()

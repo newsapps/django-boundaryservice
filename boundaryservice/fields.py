@@ -82,7 +82,7 @@ class JSONField(models.TextField):
 try:
     from south.modelsinspector import add_introspection_rules
 
-    add_introspection_rules([], ["^boundaries\.lib\.fields\.JSONField"])
+    add_introspection_rules([], ["^boundaryservice\.fields\.JSONField"])
 
     add_introspection_rules([
         (
@@ -92,6 +92,6 @@ try:
                 "separator": ["separator", {"default": ","}],
             },
         ),
-    ], ["^boundaries\.lib\.fields\.ListField"])
+    ], ["^boundaryservice\.fields\.ListField"])
 except ImportError:
     pass
