@@ -1,8 +1,11 @@
 import logging 
 log = logging.getLogger('boundaries.api.load_shapefiles')
 from optparse import make_option
-import os
+import os, os.path
 import sys
+
+from zipfile import ZipFile
+from tempfile import mkdtemp
 
 from django.conf import settings
 from django.contrib.gis.gdal import CoordTransform, DataSource, OGRGeometry, OGRGeomType
@@ -74,7 +77,7 @@ class Command(BaseCommand):
                     log.info('Loading new %s.' % kind)
 
             path = os.path.join(options['data_dir'], config['file'])
-            datasource = DataSource(path)
+            datasource = create_datasource(path)
 
             # Assume only a single-layer in shapefile
             if datasource.layer_count > 1:
@@ -169,3 +172,39 @@ class Command(BaseCommand):
             return geom
         else:
             raise ValueError('Geom is neither Polygon nor MultiPolygon.')
+
+def create_datasource(path):
+    if path.endswith('.zip'):
+        path = temp_shapefile_from_zip(path)
+    
+    return DataSource(path)
+    
+def temp_shapefile_from_zip(zip_path):
+    """Given a path to a ZIP file, unpack it into a temp dir and return the path
+       to the shapefile that was in there.  Doesn't clean up after itself unless 
+       there was an error.
+
+       If you want to cleanup later, you can derive the temp dir from this path.
+    """
+    zf = ZipFile(zip_path)
+    tempdir = mkdtemp()
+    shape_path = None
+    # Copy the zipped files to a temporary directory, preserving names.
+    for name in zf.namelist():
+        data = zf.read(name)
+        outfile = os.path.join(tempdir, name)
+        if name.endswith('.shp'):
+            shape_path = outfile
+        f = open(outfile, 'w')
+        f.write(data)
+        f.close()
+
+    if shape_path is None:
+        log.warn("No shapefile, cleaning up")
+        # Clean up after ourselves.
+        for file in os.listdir(tempdir):
+            os.unlink(os.path.join(tempdir, file))
+        os.rmdir(tempdir)
+        raise ValueError("No shapefile found in zip")
+    
+    return shape_path
