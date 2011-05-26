@@ -3,7 +3,7 @@ from django.contrib.gis.db.models import GeometryField
 from django.utils import simplejson
 
 from tastypie.bundle import Bundle
-from tastypie.fields import ApiField, CharField
+from tastypie.fields import ApiField, CharField, ListField
 from tastypie.resources import ModelResource
 from tastypie.utils import trailing_slash
 
@@ -54,6 +54,9 @@ class GeometryApiField(ApiField):
     def convert(self, value):
         if value is None:
             return None
+
+        if isinstance(value, dict):
+            return value
 
         # Get ready-made geojson serialization and then convert it _back_ to a Python object
         # so that Tastypie can serialize it as part of the bundle
