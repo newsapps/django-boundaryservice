@@ -55,11 +55,12 @@ class GeometryApiField(ApiField):
         if value is None:
             return None
 
-        print dir(value)
+        if isinstance(value, dict):
+            return value
 
         # Get ready-made geojson serialization and then convert it _back_ to a Python object
         # so that Tastypie can serialize it as part of the bundle
-        return simplejson.loads(value.json)
+        return simplejson.loads(value.geojson)
 
 
 class SluggedResource(ModelResource):
