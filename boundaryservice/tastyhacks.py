@@ -3,7 +3,7 @@ from django.contrib.gis.db.models import GeometryField
 from django.utils import simplejson
 
 from tastypie.bundle import Bundle
-from tastypie.fields import ApiField, CharField, ListField
+from tastypie.fields import ApiField, CharField
 from tastypie.resources import ModelResource
 from tastypie.utils import trailing_slash
 
