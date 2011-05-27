@@ -17,6 +17,6 @@ setup(
         'boundaryservice.management.commands'
     ],
     install_requires = [
-        'django-tastypie'
+        'django-tastypie==0.9.9'
     ]
 )
