@@ -73,13 +73,8 @@ class Command(BaseCommand):
 
             path = os.path.join(options['data_dir'], config['file'])
             datasources = create_datasources(path)
-            datasource = datasources[0]
-            datasources = datasources[1:]
-            # Assume only a single-layer in shapefile
-            if datasource.layer_count > 1:
-                log.warn('%s shapefile has multiple layers, using first.' % kind)
 
-            layer = datasource[0]
+            layer = datasources[0][0]
 
             # Create BoundarySet
             set = BoundarySet.objects.create(
@@ -94,8 +89,15 @@ class Command(BaseCommand):
                 count=len(layer),
                 metadata_fields=layer.fields)
 
-            self.add_boundaries_for_layer(config,layer,set)
+            for datasource in datasources:
+                # Assume only a single-layer in shapefile
+                if datasource.layer_count > 1:
+                    log.warn('%s shapefile [%s] has multiple layers, using first.' % (datasource.name, kind))
+                
+                self.add_boundaries_for_layer(config,layer,set)
             
+            set.count = Boundary.objects.filter(set=set).count() # sync this with reality
+            set.save()
             # TODO: work through additional shapefiles, increment set.count
             log.info('Saved %i %s.' % (set.count, kind))
 
@@ -185,7 +187,7 @@ def create_datasources(path):
     if path.endswith('.zip'):
         path = temp_shapefile_from_zip(path)
 
-    if path.endswith('.shp')
+    if path.endswith('.shp'):
         return [DataSource(path)]
     
     # assume it's a directory...
@@ -193,7 +195,7 @@ def create_datasources(path):
     for fn in os.listdir(path):
         fn = os.path.join(path,fn)
         if fn.endswith('.zip'):
-            fn = temp_shapefile_from_zip(os.path.join(path,fn))
+            fn = temp_shapefile_from_zip(fn)
         if fn.endswith('.shp'):
             sources.append(DataSource(fn))
     return sources
