@@ -90,10 +90,10 @@ class Command(BaseCommand):
                 metadata_fields=layer.fields)
 
             for datasource in datasources:
+                log.info("Loading %s from %s" % (kind, datasource.name))
                 # Assume only a single-layer in shapefile
                 if datasource.layer_count > 1:
                     log.warn('%s shapefile [%s] has multiple layers, using first.' % (datasource.name, kind))
-                
                 self.add_boundaries_for_layer(config,layer,set)
             
             set.count = Boundary.objects.filter(set=set).count() # sync this with reality
