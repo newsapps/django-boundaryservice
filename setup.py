@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name = "django-boundaryservice",
-    version = "0.1.7",
+    version = "0.1.8",
     description = "A reusable system for aggregating and providing API access to regional boundary data.",
     long_description = 'See `django-boundaryservice <https://github.com/newsapps/django-boundaryservice>`_ on Github for more information.',
     author='Christopher Groskopf',
@@ -17,6 +17,6 @@ setup(
         'boundaryservice.management.commands'
     ],
     install_requires = [
-        'django-tastypie'
+        'django-tastypie==0.9.9'
     ]
 )
