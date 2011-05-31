@@ -28,10 +28,39 @@ class BoundaryResource(SluggedResource):
         queryset = Boundary.objects.all()
         serializer = Serializer(formats=['json', 'jsonp'], content_types = {'json': 'application/json', 'jsonp': 'text/javascript'})
         resource_name = 'boundary'
-        excludes = ['id', 'display_name', 'shape']
+        excludes = ['id', 'display_name']
         allowed_methods = ['get']
         authentication = NoOpApiKeyAuthentication()
         #throttle = AnonymousThrottle(throttle_at=100) 
+
+    def alter_list_data_to_serialize(self, request, data):
+        """
+        Allow the selection of simple, full or no shapes using a query parameter.
+        """
+        shape_type = request.GET.get('shape_type', 'simple')
+
+        for obj in data['objects']:
+            if shape_type != 'simple':
+                del obj.data['simple_shape']
+
+            if shape_type != 'full':
+                del obj.data['shape']
+
+        return data
+
+    def alter_detail_data_to_serialize(self, request, bundle):
+        """
+        Allow the selection of simple, full or no shapes using a query parameter.
+        """
+        shape_type = request.GET.get('shape_type', 'simple')
+
+        if shape_type != 'simple':
+            del bundle.data['simple_shape']
+
+        if shape_type != 'full':
+            del bundle.data['shape']
+
+        return bundle
 
     def build_filters(self, filters=None):
         """
