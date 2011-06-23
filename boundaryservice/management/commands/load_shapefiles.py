@@ -77,17 +77,22 @@ class Command(BaseCommand):
             layer = datasources[0][0]
 
             # Create BoundarySet
-            set = BoundarySet.objects.create(
-                name=kind,
-                singular=config['singular'],
-                kind_first=config['kind_first'],
-                authority=config['authority'],
-                domain=config['domain'],
-                last_updated=config['last_updated'],
-                href=config['href'],
-                notes=config['notes'],
-                count=len(layer),
-                metadata_fields=layer.fields)
+            try:
+                set = BoundarySet.objects.get(name=kind)
+                log.info("Using existing BoundarySet [%s]" % set.slug)
+            except:
+                set = BoundarySet.objects.create(
+                    name=kind,
+                    singular=config['singular'],
+                    kind_first=config['kind_first'],
+                    authority=config['authority'],
+                    domain=config['domain'],
+                    last_updated=config['last_updated'],
+                    href=config['href'],
+                    notes=config['notes'],
+                    count=len(layer),
+                    metadata_fields=layer.fields)
+                log.info("Created new BoundarySet [%s]" % set.slug)
 
             for datasource in datasources:
                 log.info("Loading %s from %s" % (kind, datasource.name))
@@ -99,7 +104,7 @@ class Command(BaseCommand):
             set.count = Boundary.objects.filter(set=set).count() # sync this with reality
             set.save()
             # TODO: work through additional shapefiles, increment set.count
-            log.info('Saved %i %s.' % (set.count, kind))
+            log.info('%s count: %i' % (kind, set.count))
 
     def polygon_to_multipolygon(self, geom):
         """
