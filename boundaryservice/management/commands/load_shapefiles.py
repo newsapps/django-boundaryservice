@@ -25,10 +25,10 @@ class Command(BaseCommand):
         make_option('-d', '--data-dir', action='store', dest='data_dir', 
             default=DEFAULT_SHAPEFILES_DIR,
             help='Load shapefiles from this directory'),
-        make_option('-e', '--except', action='store', dest='except',
-            help='Don\'t load these kinds of Areas, comma-delimited.'),
-        make_option('-o', '--only', action='store', dest='only',
-            help='Only load these kinds of Areas, comma-delimited.'),
+        make_option('-e', '--except', action='store_true', dest='except',
+            default=False, help='Don\'t load these kinds of Areas, comma-delimited.'),
+        make_option('-o', '--only', action='store_true', dest='only',
+            default=False, help='Only load these kinds of Areas, comma-delimited.'),
     )
 
     def get_version(self):
