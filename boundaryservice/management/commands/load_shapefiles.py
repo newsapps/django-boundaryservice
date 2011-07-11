@@ -25,9 +25,9 @@ class Command(BaseCommand):
         make_option('-d', '--data-dir', action='store', dest='data_dir', 
             default=DEFAULT_SHAPEFILES_DIR,
             help='Load shapefiles from this directory'),
-        make_option('-e', '--except', action='store_true', dest='except',
+        make_option('-e', '--except', action='store', dest='except',
             default=False, help='Don\'t load these kinds of Areas, comma-delimited.'),
-        make_option('-o', '--only', action='store_true', dest='only',
+        make_option('-o', '--only', action='store', dest='only',
             default=False, help='Only load these kinds of Areas, comma-delimited.'),
     )
 
@@ -62,14 +62,13 @@ class Command(BaseCommand):
 
                 try:
                     set = BoundarySet.objects.get(name=kind)
+                    if set:
+                        log.info('Clearing old %s.' % kind)
+                        set.boundaries.all().delete()
+                        set.delete()
+                        log.info('Loading new %s.' % kind)
                 except BoundarySet.DoesNotExist:
-                    pass
-
-                if set:
-                    log.info('Clearing old %s.' % kind)
-                    set.boundaries.all().delete()
-                    set.delete()
-                    log.info('Loading new %s.' % kind)
+                    log.info("No existing boundary set of kind [%s] so nothing to delete" % kind)
 
             path = os.path.join(options['data_dir'], config['file'])
             datasources = create_datasources(path)
@@ -99,6 +98,7 @@ class Command(BaseCommand):
                 # Assume only a single-layer in shapefile
                 if datasource.layer_count > 1:
                     log.warn('%s shapefile [%s] has multiple layers, using first.' % (datasource.name, kind))
+                layer = datasource[0]    
                 self.add_boundaries_for_layer(config,layer,set)
             
             set.count = Boundary.objects.filter(set=set).count() # sync this with reality
