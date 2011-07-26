@@ -36,13 +36,11 @@ You can clear a particular shapefile from the database and reload it with the "-
 Advice
 ======
 
-Definitions
------------
+**Definitions**
 
 Of particular note amongst the defintion fields are the 'ider' and 'namer' properties. These should be assigned to functions which will be passed a feature's attributes as a dictionary. 'ider' should return a unique external id for the feature. (e.g. a district id number, geographic id code or any sequential primary key). Whenever possible these ids should be stable across revisions to the dataset. 'namer' should return a canonical name for the feature, not including its kind. (e.g. "Austin" for the Austin Community Area, "Chicago" for the City of Chicago, or #42 for Police Beat #42) A number of callable classes are defined in data/shapefiles/utils.py, which should mitigate the need to write custom functions for each dataset. 
 
-Namespacing
------------
+**Namespacing**
 
 As a matter of best practice when shapefiles have been acquired from government entities and other primary sources it is advisable not to modify them before loading them into the Boundary Service. (Thus why the Chicago neighborhoods shapefile is misspelled "Neighboorhoods".) If it is necessary to modify the data this should be noted in the 'notes' field of the shapefile's definitions.py entry.
 
