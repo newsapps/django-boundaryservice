@@ -8,9 +8,9 @@ The best example of a complete Boundary Service implementation is `hacktyler-bou
 Installation
 ============
 
-To install django-boundaryservice use pip::
+Using pip::
 
-    pip install django-boundaryservice
+    $ pip install django-boundaryservice
 
 Using the shapefile loader
 ==========================
