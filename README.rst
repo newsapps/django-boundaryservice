@@ -3,7 +3,7 @@ The Newsapps Boundary Service
 
 The Boundary Service is a ready-to-deploy system for aggregating regional boundary data (from shapefiles) and republishing that data via a RESTful JSON API.  It is packaged as a pluggable Django application so that it can be easily integrated into any project. The best example of a complete Boundary Service implementation is `hacktyler-boundaryservice <https://github.com/hacktyler/hacktyler-boundaryservice>`_.
 
-This project is aimed at providing a simple service for newsrooms, open-government hackers and others to centralize and build on regional GIS data.  For more inspiration you can see the instance we've configured for Chicago & Illinois, along with usaer documentation for the API at `http://boundaries.tribapps.com/ <http://boundaries.tribapps.com/>`_.
+This project is aimed at providing a simple service for newsrooms, open-government hackers and others to centralize and build on regional GIS data.  For more inspiration you can see the instance we've configured for Chicago & Illinois, along with user documentation for the API at `http://boundaries.tribapps.com/ <http://boundaries.tribapps.com/>`_.
 
 Installation
 ============
