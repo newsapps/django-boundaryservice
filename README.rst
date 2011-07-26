@@ -13,6 +13,17 @@ Using pip::
 
     $ pip install django-boundaryservice
 
+Add the following to INSTALLED_APPS in your settings.py
+
+    ...
+    'tastypie',
+    'boundaryservice',
+    ...
+
+Add the following to your urls.py::
+
+    (r'', include('boundaryservice.urls')),
+
 Adding data
 ===========
 
