@@ -12,7 +12,8 @@ To install django-boundaryservice use pip::
 
     pip install django-boundaryservice
 
-h2. Using the shapefile loader
+Using the shapefile loader
+==========================
 
 By default the shapefile loader will expect you to have created the path "data/shapefiles" relative to your manage.py script. Shapefiles and your definitions.py go into this folder. See `boundaryservice demo site <https://github.com/newsapps/boundaryservice>`_ for a complete example. You may also override the default location by passing the "-d" flag to the command or setting SHAPEFILES_DIR in settings.py::
 
