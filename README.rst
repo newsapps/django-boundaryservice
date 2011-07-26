@@ -25,11 +25,11 @@ You may also override the default location by passing the "-d" flag to the comma
 
     $ python manage.py load_shapefiles -d data_dir
 
-A particular shapefile like so::
+You can load only a specified shapefile with the "-o" flag::
 
     $ python manage.py load_shapefiles -o ShapeFileName
 
-You can clear a particular shapefile from the database and reload it like so::
+You can clear a particular shapefile from the database and reload it with the "-c" flag::
 
     $ python manage.py load_shapefiles -c ShapeFileName
 
