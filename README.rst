@@ -15,9 +15,13 @@ Using pip::
 Adding data
 ===========
 
-To add data you will first need to add a shapefile and its related files (prj, dbf, etc.) to the data/shapefiles directory. Shapefiles and your definitions.py go into this folder. See the `hacktyler demo site <https://github.com/hacktyler/hacktyler-boundaryservice>`_ for a complete example. You may also override the default location by passing the "-d" flag to the command or setting SHAPEFILES_DIR in settings.py::
+To add data you will first need to add a shapefile and its related files (prj, dbf, etc.) to the data/shapefiles directory. Shapefiles and your definitions.py go into this folder. See the `hacktyler demo site <https://github.com/hacktyler/hacktyler-boundaryservice>`_ for a complete example. 
 
 You can load all definitions like so::
+
+    $ python manage.py load_shapefiles
+
+You may also override the default location by passing the "-d" flag to the command or setting SHAPEFILES_DIR in settings.py::
 
     $ python manage.py load_shapefiles -d data_dir
 
