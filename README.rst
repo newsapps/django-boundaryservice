@@ -18,6 +18,10 @@ Adding data
 
 To add data you will first need to add a shapefile and its related files (prj, dbf, etc.) to the data/shapefiles directory. Shapefiles and your definitions.py go into this folder. See the `hacktyler demo site <https://github.com/hacktyler/hacktyler-boundaryservice>`_ for a complete example. 
 
+If you havn't already, you can create your definitions file using a management command::
+
+    $ python manage.py startshapedefinitions
+
 You can load all definitions like so::
 
     $ python manage.py load_shapefiles

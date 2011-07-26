@@ -26,7 +26,7 @@ class Command(BaseCommand):
         ),
     )
     option_list = BaseCommand.option_list + custom_options
-
+    
     def handle(self, *args, **options):
         shp_dir = getattr(settings, 'SHAPEFILES_DIR', 'data/shapefiles')
         if not os.path.exists(shp_dir):
