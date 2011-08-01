@@ -29,6 +29,8 @@ class Command(BaseCommand):
             default=False, help='Don\'t load these kinds of Areas, comma-delimited.'),
         make_option('-o', '--only', action='store', dest='only',
             default=False, help='Only load these kinds of Areas, comma-delimited.'),
+        make_option('-u', '--using', action='store', dest='using',
+            default=DEFAULT_DB_ALIAS, help='Specify the alias of an alternate database'),
     )
 
     def get_version(self):
@@ -38,6 +40,9 @@ class Command(BaseCommand):
         # Load configuration
         sys.path.append(options['data_dir'])
         from definitions import SHAPEFILES
+
+        if options['using']:
+            using = options['using']
 
         if options['only']:
             only = options['only'].split(',')
@@ -99,7 +104,7 @@ class Command(BaseCommand):
                 if datasource.layer_count > 1:
                     log.warn('%s shapefile [%s] has multiple layers, using first.' % (datasource.name, kind))
                 layer = datasource[0]    
-                self.add_boundaries_for_layer(config,layer,set)
+                self.add_boundaries_for_layer(config,layer,set, using)
             
             set.count = Boundary.objects.filter(set=set).count() # sync this with reality
             set.save()
@@ -120,11 +125,11 @@ class Command(BaseCommand):
             raise ValueError('Geom is neither Polygon nor MultiPolygon.')
 
 
-    def add_boundaries_for_layer(self,config,layer,set):
+    def add_boundaries_for_layer(self,config,layer,set, using):
         # Get spatial reference system for the postgis geometry field
         geometry_field = Boundary._meta.get_field_by_name(GEOMETRY_COLUMN)[0]
-        SpatialRefSys = connections[DEFAULT_DB_ALIAS].ops.spatial_ref_sys()
-        db_srs = SpatialRefSys.objects.get(srid=geometry_field.srid).srs
+        SpatialRefSys = connections[using].ops.spatial_ref_sys()
+        db_srs = SpatialRefSys.objects.using(using).get(srid=geometry_field.srid).srs
 
 
         if 'srid' in config and config['srid']:
