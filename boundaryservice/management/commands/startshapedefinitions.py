@@ -39,13 +39,15 @@ class Command(BaseCommand):
             raise CommandError("The shapefiles directory does not exist. Create it or specify a different directory.")
         def_path = os.path.join(options['data_dir'], "definitions.py")
         if os.path.exists(def_path) and not options.get("force"):
-            raise CommandError("Sorry, %s already exists." % def_path)
+            raise CommandError("%s already exists." % def_path)
         outfile = open(def_path, "w")
         outfile.write(BOILERPLATE)
         outfile.close()
         logging.info('Created definitions.py in %s' % options['data_dir'])
 
 BOILERPLATE = """from datetime import date
+
+from boundaryservice import utils
 
 SHAPEFILES = {
     # This key should be the plural name of the boundaries in this set
@@ -58,9 +60,9 @@ SHAPEFILES = {
         'kind_first': False,
         # Function which each feature wall be passed to in order to extract its "external_id" property
         # The utils module contains several generic functions for doing this
-        'ider': None,
+        'ider': utils.simple_namer(['DISTRICT']),
         # Function which each feature will be passed to in order to extract its "name" property
-        'namer': None,
+        'namer': utils.simple_namer(['NAME']),
         # Authority that is responsible for the accuracy of this data
         'authority': 'Tyler GIS Department',
         # Geographic extents which the boundary set encompasses
