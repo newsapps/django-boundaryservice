@@ -60,3 +60,4 @@ class simple_namer():
                 name = normed
         
         return name
+

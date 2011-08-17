@@ -1,9 +1,12 @@
-import os
+import logging 
+log = logging.getLogger('boundaries.api.load_shapefiles')
 from optparse import make_option
+import os
+
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-
+DEFAULT_SHAPEFILES_DIR = getattr(settings, 'SHAPEFILES_DIR', 'data/shapefiles')
 
 class Command(BaseCommand):
     """
@@ -22,23 +25,25 @@ class Command(BaseCommand):
     custom_options = (
         make_option('-f', '--force',
             action='store_true', dest='force',
-            help='Force the creation of a new defintions.py, even if it already exists.'
+            help='Force the creation of a new definitions.py, even if it already exists.'
+        ),
+        make_option('-d', '--data-dir', action='store', dest='data_dir', 
+            default=DEFAULT_SHAPEFILES_DIR,
+            help='Load shapefiles from this directory'
         ),
     )
     option_list = BaseCommand.option_list + custom_options
     
     def handle(self, *args, **options):
-        shp_dir = getattr(settings, 'SHAPEFILES_DIR', 'data/shapefiles')
-        if not os.path.exists(shp_dir):
-            raise CommandError("The shapefiles directory does not exist. Create data/shapefiles/ or set SHAPEFILES_DIR in settings.py.")
-        def_path = os.path.join(shp_dir, "definitions.py")
+        if not os.path.exists(options['data_dir']):
+            raise CommandError("The shapefiles directory does not exist. Create it or specify a different directory.")
+        def_path = os.path.join(options['data_dir'], "definitions.py")
         if os.path.exists(def_path) and not options.get("force"):
             raise CommandError("Sorry, %s already exists." % def_path)
         outfile = open(def_path, "w")
         outfile.write(BOILERPLATE)
         outfile.close()
-        self.stdout.write('Created definitions.py in %s\n' % shp_dir)
-
+        logging.info('Created definitions.py in %s' % options['data_dir'])
 
 BOILERPLATE = """from datetime import date
 
@@ -72,4 +77,5 @@ SHAPEFILES = {
         # This is normally not necessary and can be left undefined or set to an empty string to maintain the default behavior
         'srid': ''
     }
-}"""
+}
+"""

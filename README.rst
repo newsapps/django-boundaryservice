@@ -35,19 +35,19 @@ If you havn't already, you can create your definitions file using a management c
 
 You can load all definitions like so::
 
-    $ python manage.py load_shapefiles
+    $ python manage.py loadshapefiles
 
 You may also override the default location by passing the "-d" flag to the command or setting SHAPEFILES_DIR in settings.py::
 
-    $ python manage.py load_shapefiles -d data_dir
+    $ python manage.py loadshapefiles -d data_dir
 
 You can load only a specified shapefile with the "-o" flag::
 
-    $ python manage.py load_shapefiles -o ShapeFileName
+    $ python manage.py loadshapefiles -o ShapeFileName
 
 You can clear a particular shapefile from the database and reload it with the "-c" flag::
 
-    $ python manage.py load_shapefiles -c ShapeFileName
+    $ python manage.py loadshapefiles -c ShapeFileName
 
 Advice
 ======
