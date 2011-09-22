@@ -1,5 +1,11 @@
 import re
-from django.contrib.gis.db import models
+from django.conf import settings
+from django.db import models
+
+USE_GEODJANGO = ('django.contrib.gis' in settings.INSTALLED_APPS)
+if USE_GEODJANGO:
+    from django.contrib.gis.db import models
+
 from boundaryservice.fields import ListField, JSONField
 from boundaryservice.utils import get_site_url_root
 
@@ -12,12 +18,12 @@ class SluggedModel(models.Model):
     have numbers appended to make sure the slug is unique.
     """
     slug = models.SlugField(max_length=256)
-    
+
     class Meta:
         abstract = True
-    
+
     def save(self, *args, **kwargs):
-        self.unique_slug()  
+        self.unique_slug()
         if self.slug == '': raise ValueError, "Slug may not be blank [%s]" % str(self)
         super(SluggedModel,self).save(*args, **kwargs)
 
@@ -50,7 +56,7 @@ class SluggedModel(models.Model):
                     slug = '%s%s' % (slug, end)
                     next += 1
                 setattr(self, "slug", slug)
-    
+
     def fully_qualified_url(self):
         return get_site_url_root() + self.get_absolute_url()
 
@@ -106,15 +112,26 @@ class Boundary(SluggedModel):
         help_text='The name and kind of the field to be used for display purposes.')
     metadata = JSONField(blank=True,
         help_text='The complete contents of the attribute table for this boundary from the source shapefile, structured as json.')
-    shape = models.MultiPolygonField(srid=4269,
-        help_text='The geometry of this boundary in EPSG:4269 projection.')
-    simple_shape = models.MultiPolygonField(srid=4269,
-        help_text='The geometry of this boundary in EPSG:4269 projection and simplified to 0.0001 tolerance.')
-    centroid = models.PointField(srid=4269,
-        null=True,
-        help_text='The centroid (weighted center) of this boundary in EPSG:4269 projection.')
-    
-    objects = models.GeoManager()
+
+    if USE_GEODJANGO:
+        shape = models.MultiPolygonField(srid=4269,
+            help_text='The geometry of this boundary in EPSG:4269 projection.')
+        simple_shape = models.MultiPolygonField(srid=4269,
+            help_text='The geometry of this boundary in EPSG:4269 projection and simplified to 0.0001 tolerance.')
+        centroid = models.PointField(srid=4269,
+            null=True,
+            help_text='The centroid (weighted center) of this boundary in EPSG:4269 projection.')
+    else:
+        shape = models.TextField(help_text='(GeoDjango is disabled)')
+        simple_shape = models.TextField(help_text='(GeoDjango is disabled)')
+        centroid = models.TextField(
+            null=True,
+            help_text='(GeoDjango is disabled)')
+
+    if USE_GEODJANGO:
+        objects = models.GeoManager()
+    else:
+        objects = models.Manager()
 
     class Meta:
         ordering = ('kind', 'display_name')
