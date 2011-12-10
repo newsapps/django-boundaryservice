@@ -84,7 +84,7 @@ class Command(BaseCommand):
             try:
                 set = BoundarySet.objects.get(name=kind)
                 log.info("Using existing BoundarySet [%s]" % set.slug)
-            except:
+            except BoundarySet.DoesNotExist:
                 set = BoundarySet.objects.create(
                     name=kind,
                     singular=config['singular'],
