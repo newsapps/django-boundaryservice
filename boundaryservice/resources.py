@@ -10,7 +10,11 @@ from boundaryservice.tastyhacks import SluggedResource
 from boundaryservice.throttle import AnonymousThrottle
 
 class BoundarySetResource(SluggedResource):
-    boundaries = fields.ToManyField('boundaryservice.resources.BoundaryResource', 'boundaries')
+    boundaries = fields.ToManyField('boundaryservice.resources.BoundaryResource',
+        # We're manually specifying the QuerySet here so that we can exclude heavy fields
+        # from the SELECTs
+        attribute=lambda b: Boundary.objects.filter(set=b.obj.pk).only('id', 'slug'),
+        null=True)
 
     class Meta:
         queryset = BoundarySet.objects.all()
