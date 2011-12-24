@@ -58,13 +58,13 @@ class Boundary(models.Model):
         help_text='The name and kind of the field to be used for display purposes.')
     metadata = JSONField(blank=True,
         help_text='The complete contents of the attribute table for this boundary from the source shapefile, structured as json.')
-    shape = models.MultiPolygonField(srid=4269,
-        help_text='The geometry of this boundary in EPSG:4269 projection.')
-    simple_shape = models.MultiPolygonField(srid=4269,
-        help_text='The geometry of this boundary in EPSG:4269 projection and simplified to 0.0001 tolerance.')
-    centroid = models.PointField(srid=4269,
+    shape = models.MultiPolygonField(
+        help_text='The geometry of this boundary in EPSG:4326 projection.')
+    simple_shape = models.MultiPolygonField(
+        help_text='The geometry of this boundary in EPSG:4326 projection and simplified to 0.0001 tolerance.')
+    centroid = models.PointField(
         null=True,
-        help_text='The centroid (weighted center) of this boundary in EPSG:4269 projection.')
+        help_text='The centroid (weighted center) of this boundary in EPSG:4326 projection.')
     
     objects = models.GeoManager()
 
