@@ -10,7 +10,7 @@ from tempfile import mkdtemp
 from django.conf import settings
 from django.contrib.gis.gdal import CoordTransform, DataSource, OGRGeometry, OGRGeomType
 from django.core.management.base import BaseCommand
-from django.db import connections, DEFAULT_DB_ALIAS
+from django.db import connections, DEFAULT_DB_ALIAS, transaction
 
 from boundaryservice.models import BoundarySet, Boundary
 
@@ -41,9 +41,6 @@ class Command(BaseCommand):
         sys.path.append(options['data_dir'])
         from definitions import SHAPEFILES
 
-        if options['database']:
-            database = options['database']
-
         if options['only']:
             only = options['only'].split(',')
             # TODO: stripping whitespace here because optparse doesn't handle it correctly
@@ -62,54 +59,56 @@ class Command(BaseCommand):
 
             log.info('Processing %s.' % kind)
 
-            if options['clear']:
-                set = None
+            self.load_set(kind, config, options)
 
-                try:
-                    set = BoundarySet.objects.get(name=kind)
-                    if set:
-                        log.info('Clearing old %s.' % kind)
-                        set.boundaries.all().delete()
-                        set.delete()
-                        log.info('Loading new %s.' % kind)
-                except BoundarySet.DoesNotExist:
-                    log.info("No existing boundary set of kind [%s] so nothing to delete" % kind)
+    @transaction.commit_on_success
+    def load_set(self, kind, config, options):
+        log.info('Processing %s.' % kind)
 
-            path = os.path.join(options['data_dir'], config['file'])
-            datasources = create_datasources(path)
-
-            layer = datasources[0][0]
-
-            # Create BoundarySet
-            try:
-                set = BoundarySet.objects.get(name=kind)
-                log.info("Using existing BoundarySet [%s]" % set.slug)
-            except BoundarySet.DoesNotExist:
-                set = BoundarySet.objects.create(
-                    name=kind,
-                    singular=config['singular'],
-                    kind_first=config['kind_first'],
-                    authority=config['authority'],
-                    domain=config['domain'],
-                    last_updated=config['last_updated'],
-                    href=config['href'],
-                    notes=config['notes'],
-                    count=len(layer),
-                    metadata_fields=layer.fields)
-                log.info("Created new BoundarySet [%s]" % set.slug)
-
-            for datasource in datasources:
-                log.info("Loading %s from %s" % (kind, datasource.name))
-                # Assume only a single-layer in shapefile
-                if datasource.layer_count > 1:
-                    log.warn('%s shapefile [%s] has multiple layers, using first.' % (datasource.name, kind))
-                layer = datasource[0]    
-                self.add_boundaries_for_layer(config, layer, set, database)
+        if options['clear']:
+            bset = None
             
-            set.count = Boundary.objects.filter(set=set).count() # sync this with reality
-            set.save()
-            # TODO: work through additional shapefiles, increment set.count
-            log.info('%s count: %i' % (kind, set.count))
+            try:
+                bset = BoundarySet.objects.get(name=kind)
+
+                if bset:
+                    log.info('Clearing old %s.' % kind)
+                    bset.boundaries.all().delete()
+                    bset.delete()
+                    
+                    log.info('Loading new %s.' % kind)
+            except BoundarySet.DoesNotExist:
+                log.info("No existing boundary set of kind [%s] so nothing to delete" % kind)
+
+        path = os.path.join(options['data_dir'], config['file'])
+        datasources = create_datasources(path)
+
+        layer = datasources[0][0]
+
+        # Create BoundarySet
+        bset = BoundarySet.objects.create(
+            name=kind,
+            singular=config['singular'],
+            kind_first=config['kind_first'],
+            authority=config['authority'],
+            domain=config['domain'],
+            last_updated=config['last_updated'],
+            href=config['href'],
+            notes=config['notes'],
+            count=len(layer),
+            metadata_fields=layer.fields)
+
+        for datasource in datasources:
+            log.info("Loading %s from %s" % (kind, datasource.name))
+            # Assume only a single-layer in shapefile
+            if datasource.layer_count > 1:
+                log.warn('%s shapefile [%s] has multiple layers, using first.' % (datasource.name, kind))
+            layer = datasource[0]
+            self.add_boundaries_for_layer(config, layer, bset, options['database'])
+
+        bset.count = Boundary.objects.filter(set=bset).count() # sync this with reality
+        bset.save()
+        log.info('%s count: %i' % (kind, bset.count))
 
     def polygon_to_multipolygon(self, geom):
         """
@@ -124,7 +123,7 @@ class Command(BaseCommand):
         else:
             raise ValueError('Geom is neither Polygon nor MultiPolygon.')
 
-    def add_boundaries_for_layer(self, config, layer, set, database):
+    def add_boundaries_for_layer(self, config, layer, bset, database):
         # Get spatial reference system for the postgis geometry field
         geometry_field = Boundary._meta.get_field_by_name(GEOMETRY_COLUMN)[0]
         SpatialRefSys = connections[database].ops.spatial_ref_sys()
@@ -186,7 +185,7 @@ class Command(BaseCommand):
                 display_name = '%s %s' % (feature_name, config['singular'])
 
             Boundary.objects.create(
-                set=set,
+                set=bset,
                 kind=config['singular'],
                 external_id=external_id,
                 name=feature_name,
@@ -214,11 +213,12 @@ def create_datasources(path):
     return sources
     
 def temp_shapefile_from_zip(zip_path):
-    """Given a path to a ZIP file, unpack it into a temp dir and return the path
-       to the shapefile that was in there.  Doesn't clean up after itself unless 
-       there was an error.
+    """
+    Given a path to a ZIP file, unpack it into a temp dir and return the path
+    to the shapefile that was in there.  Doesn't clean up after itself unless 
+    there was an error.
 
-       If you want to cleanup later, you can derive the temp dir from this path.
+    If you want to cleanup later, you can derive the temp dir from this path.
     """
     zf = ZipFile(zip_path)
     tempdir = mkdtemp()
@@ -242,3 +242,4 @@ def temp_shapefile_from_zip(zip_path):
         raise ValueError("No shapefile found in zip")
     
     return shape_path
+
