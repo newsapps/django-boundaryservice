@@ -11,6 +11,7 @@ from django.conf import settings
 from django.contrib.gis.gdal import CoordTransform, DataSource, OGRGeometry, OGRGeomType
 from django.core.management.base import BaseCommand
 from django.db import connections, DEFAULT_DB_ALIAS
+from django.template.defaultfilters import slugify
 
 from boundaryservice.models import BoundarySet, Boundary
 
@@ -182,7 +183,7 @@ class Command(BaseCommand):
 
             Boundary.objects.create(
                 set=set,
-                kind=config['singular'],
+                set_name=set.singular,
                 external_id=external_id,
                 name=feature_name,
                 display_name=display_name,

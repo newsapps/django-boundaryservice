@@ -1,6 +1,8 @@
 import re
 
 from django.contrib.gis.db import models
+from django.core import urlresolvers
+from django.template.defaultfilters import slugify
 
 from boundaryservice.fields import ListField, JSONField
 from boundaryservice.utils import get_site_url_root
@@ -9,11 +11,11 @@ class BoundarySet(models.Model):
     """
     A set of related boundaries, such as all Wards or Neighborhoods.
     """
-    slug = models.SlugField(max_length=200, primary_key=True)
+    slug = models.SlugField(max_length=200, primary_key=True, editable=False)
 
-    name = models.CharField(max_length=64, unique=True,
+    name = models.CharField(max_length=100, unique=True,
         help_text='Category of boundaries, e.g. "Community Areas".')
-    singular = models.CharField(max_length=64,
+    singular = models.CharField(max_length=100,
         help_text='Name of a single boundary, e.g. "Community Area".')
     kind_first = models.BooleanField(
         help_text='If true, boundary display names will be "<kind> <name>" (e.g. Austin Community Area), otherwise "<name> <kind>" (e.g. 43rd Precinct).')
@@ -40,16 +42,43 @@ class BoundarySet(models.Model):
     class Meta:
         ordering = ('name',)
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        return super(BoundarySet, self).save(*args, **kwargs)
+
     def __unicode__(self):
         return self.name
+
+    def as_dict(self):
+        r = {
+            'boundaries': urlresolvers.reverse('boundaryservice_boundary_list', kwargs={'set_slug': self.slug}),
+        }
+        for f in ('name', 'singular', 'authority', 'domain', 'href', 'notes', 'count', 'metadata_fields'):
+            r[f] = getattr(self, f)
+        return r
+
+    @staticmethod
+    def get_dicts(sets):
+        return [
+            {
+                'url': urlresolvers.reverse('boundaryservice_set_detail', kwargs={'slug': s.slug}),
+                'boundaries_url': urlresolvers.reverse('boundaryservice_boundary_list', kwargs={'set_slug': s.slug}),
+                'boundaries_count': s.count,
+                'name': s.name,
+                'domain': s.domain,
+                'hierarchy': s.get_hierarchy_display(),
+            } for s in sets
+        ]
 
 class Boundary(models.Model):
     """
     A boundary object, such as a Ward or Neighborhood.
     """
-    boundaryset = models.ForeignKey(BoundarySet, related_name='boundaries',
+    set = models.ForeignKey(BoundarySet, related_name='boundaries',
         help_text='Category of boundaries that this boundary belongs, e.g. "Community Areas".')
-    slug = models.SlugField(max_length=200)
+    set_name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=200, db_index=True)
     external_id = models.CharField(max_length=64,
         help_text='The boundaries\' unique id in the source dataset, or a generated one.')
     name = models.CharField(max_length=192, db_index=True,
@@ -71,5 +100,36 @@ class Boundary(models.Model):
     class Meta:
         unique_together = (('slug', 'set'))
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        return super(Boundary, self).save(*args, **kwargs)
+
     def __unicode__(self):
         return self.display_name
+
+    def as_dict(self):
+        return {
+            'set_url': urlresolvers.reverse('boundaryservice_set_detail', kwargs={'slug': self.set_id}),
+            'set_name': self.set_name,
+            'name': self.name,
+            'display_name': self.display_name,
+            'metadata': self.metadata
+        }
+
+    @staticmethod
+    def prepare_queryset_for_get_dicts(qs):
+        return qs.values_list('slug', 'set', 'name', 'display_name', 'set_name')
+
+    @staticmethod
+    def get_dicts(boundaries):
+        return [
+            {
+                'url': urlresolvers.reverse('boundaryservice_boundary_detail', kwargs={'slug': b[0], 'set_slug': b[1]}),
+                'name': b[2],
+                'display_name': b[3],
+                'set_url': urlresolvers.reverse('boundaryservice_set_detail', kwargs={'slug': b[1]}),
+                'set_name': b[4],
+            } for b in boundaries
+        ]
+
