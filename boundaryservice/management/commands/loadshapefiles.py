@@ -42,9 +42,6 @@ class Command(BaseCommand):
         sys.path.append(options['data_dir'])
         from definitions import SHAPEFILES
 
-        if options['database']:
-            database = options['database']
-
         if options['only']:
             only = options['only'].split(',')
             # TODO: stripping whitespace here because optparse doesn't handle it correctly
@@ -97,7 +94,7 @@ class Command(BaseCommand):
             if datasource.layer_count > 1:
                 log.warn('%s shapefile [%s] has multiple layers, using first.' % (datasource.name, kind))
             layer = datasource[0]
-            self.add_boundaries_for_layer(config, layer, set, database)
+            self.add_boundaries_for_layer(config, layer, set, options['database'])
 
         set.count = Boundary.objects.filter(set=set).count() # sync this with reality
         set.save()
