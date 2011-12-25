@@ -1,5 +1,5 @@
 import logging 
-log = logging.getLogger('boundaries.api.load_shapefiles')
+log = logging.getLogger(__name__)
 from optparse import make_option
 import os, os.path
 import sys
@@ -10,7 +10,7 @@ from tempfile import mkdtemp
 from django.conf import settings
 from django.contrib.gis.gdal import CoordTransform, DataSource, OGRGeometry, OGRGeomType
 from django.core.management.base import BaseCommand
-from django.db import connections, DEFAULT_DB_ALIAS
+from django.db import connections, DEFAULT_DB_ALIAS, transaction
 from django.template.defaultfilters import slugify
 
 from boundaryservice.models import BoundarySet, Boundary
@@ -21,8 +21,8 @@ GEOMETRY_COLUMN = 'shape'
 class Command(BaseCommand):
     help = 'Import boundaries described by shapefiles.'
     option_list = BaseCommand.option_list + (
-        make_option('-c', '--clear', action='store_true', dest='clear',
-            help='Clear all jurisdictions in the DB.'),
+        make_option('-r', '--reload', action='store_true', dest='reload',
+            help='Reload BoundarySets that have already been imported.'),
         make_option('-d', '--data-dir', action='store', dest='data_dir', 
             default=DEFAULT_SHAPEFILES_DIR,
             help='Load shapefiles from this directory'),
@@ -58,59 +58,50 @@ class Command(BaseCommand):
         
         for kind, config in SHAPEFILES.items():
             if kind not in sources:
-                log.info('Skipping %s.' % kind)
+                log.debug('Skipping %s.' % kind)
                 continue
 
-            log.info('Processing %s.' % kind)
+            if (not options['reload']) and BoundarySet.objects.filter(name=kind).exists():
+                log.info('Already loaded %s, skipping.' % kind)
+                continue
 
-            if options['clear']:
-                set = None
+            self.load_set(kind, config, options)
 
-                try:
-                    set = BoundarySet.objects.get(name=kind)
-                    if set:
-                        log.info('Clearing old %s.' % kind)
-                        set.boundaries.all().delete()
-                        set.delete()
-                        log.info('Loading new %s.' % kind)
-                except BoundarySet.DoesNotExist:
-                    log.info("No existing boundary set of kind [%s] so nothing to delete" % kind)
+    @transaction.commit_on_success
+    def load_set(self, kind, config, options):
+        log.info('Processing %s.' % kind)
 
-            path = os.path.join(options['data_dir'], config['file'])
-            datasources = create_datasources(path)
+        BoundarySet.objects.get(name=kind).delete()
 
-            layer = datasources[0][0]
+        path = os.path.join(options['data_dir'], config['file'])
+        datasources = create_datasources(path)
 
-            # Create BoundarySet
-            try:
-                set = BoundarySet.objects.get(name=kind)
-                log.info("Using existing BoundarySet [%s]" % set.slug)
-            except BoundarySet.DoesNotExist:
-                set = BoundarySet.objects.create(
-                    name=kind,
-                    singular=config['singular'],
-                    kind_first=config['kind_first'],
-                    authority=config['authority'],
-                    domain=config['domain'],
-                    last_updated=config['last_updated'],
-                    href=config['href'],
-                    notes=config['notes'],
-                    count=len(layer),
-                    metadata_fields=layer.fields)
-                log.info("Created new BoundarySet [%s]" % set.slug)
+        layer = datasources[0][0]
 
-            for datasource in datasources:
-                log.info("Loading %s from %s" % (kind, datasource.name))
-                # Assume only a single-layer in shapefile
-                if datasource.layer_count > 1:
-                    log.warn('%s shapefile [%s] has multiple layers, using first.' % (datasource.name, kind))
-                layer = datasource[0]    
-                self.add_boundaries_for_layer(config, layer, set, database)
-            
-            set.count = Boundary.objects.filter(set=set).count() # sync this with reality
-            set.save()
-            # TODO: work through additional shapefiles, increment set.count
-            log.info('%s count: %i' % (kind, set.count))
+        # Create BoundarySet
+        set = BoundarySet.objects.create(
+            name=kind,
+            singular=config['singular'],
+            kind_first=config['kind_first'],
+            authority=config['authority'],
+            domain=config['domain'],
+            last_updated=config['last_updated'],
+            href=config['href'],
+            notes=config['notes'],
+            count=len(layer),
+            metadata_fields=layer.fields)
+
+        for datasource in datasources:
+            log.info("Loading %s from %s" % (kind, datasource.name))
+            # Assume only a single-layer in shapefile
+            if datasource.layer_count > 1:
+                log.warn('%s shapefile [%s] has multiple layers, using first.' % (datasource.name, kind))
+            layer = datasource[0]
+            self.add_boundaries_for_layer(config, layer, set, database)
+
+        set.count = Boundary.objects.filter(set=set).count() # sync this with reality
+        set.save()
+        log.info('%s count: %i' % (kind, set.count))
 
     def polygon_to_multipolygon(self, geom):
         """
