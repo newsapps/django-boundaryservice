@@ -71,7 +71,7 @@ class Command(BaseCommand):
     def load_set(self, kind, config, options):
         log.info('Processing %s.' % kind)
 
-        BoundarySet.objects.get(name=kind).delete()
+        BoundarySet.objects.filter(name=kind).delete()
 
         path = os.path.join(options['data_dir'], config['file'])
         datasources = create_datasources(path)
