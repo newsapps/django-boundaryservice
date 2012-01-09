@@ -52,7 +52,7 @@ class BoundarySet(models.Model):
 
     def as_dict(self):
         r = {
-            'boundaries': urlresolvers.reverse('boundaryservice_boundary_list', kwargs={'set_slug': self.slug}),
+            'boundaries_url': urlresolvers.reverse('boundaryservice_boundary_list', kwargs={'set_slug': self.slug}),
         }
         for f in ('name', 'singular', 'authority', 'domain', 'href', 'notes', 'count', 'metadata_fields'):
             r[f] = getattr(self, f)
@@ -114,7 +114,8 @@ class Boundary(models.Model):
             'set_name': self.set_name,
             'name': self.name,
             'display_name': self.display_name,
-            'metadata': self.metadata
+            'metadata': self.metadata,
+            'external_id': self.external_id,
         }
 
     @staticmethod
