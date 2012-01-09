@@ -4,7 +4,7 @@
 import re
 
 from django.contrib.gis.measure import D
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, HttpResponseForbidden
 from django.template.defaultfilters import escapejs
 from django.utils import simplejson as json
 from django.views.generic import View
@@ -12,6 +12,7 @@ from django.views.generic import View
 from tastypie.paginator import Paginator
 
 from boundaryservice import kml
+from boundaryservice.models import app_settings
 
 class RawJSONResponse(object):
     """APIView subclasses can return these if they have
@@ -136,6 +137,11 @@ class ModelGeoListView(ModelListView):
             raise Http404
         qs = self.get_qs(request, **kwargs)
         qs = self.filter(request, qs)
+
+        if qs.count() > app_settings.MAX_GEO_LIST_RESULTS:
+            return HttpResponseForbidden(
+                "Spatial-list queries cannot return more than %d resources. Please filter your query."
+                % app_settings.MAX_GEO_LIST_RESULTS)
 
         format = request.GET.get('format', 'json')
 
