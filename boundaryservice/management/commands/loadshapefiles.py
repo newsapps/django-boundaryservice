@@ -84,8 +84,7 @@ class Command(BaseCommand):
             last_updated=config['last_updated'],
             href=config['href'],
             notes=config['notes'],
-            count=len(layer),
-            metadata_fields=layer.fields)
+        )
 
         for datasource in datasources:
             log.info("Loading %s from %s" % (kind, datasource.name))
@@ -95,9 +94,7 @@ class Command(BaseCommand):
             layer = datasource[0]
             self.add_boundaries_for_layer(config, layer, set, options['database'])
 
-        set.count = Boundary.objects.filter(set=set).count() # sync this with reality
-        set.save()
-        log.info('%s count: %i' % (kind, set.count))
+        log.info('%s count: %i' % (kind, Boundary.objects.filter(set=set).count()))
 
     def polygon_to_multipolygon(self, geom):
         """

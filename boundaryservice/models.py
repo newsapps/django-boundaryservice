@@ -29,21 +29,12 @@ class BoundarySet(models.Model):
         help_text='The entity responsible for this data\'s accuracy, e.g. "City of Chicago".')
     domain = models.CharField(max_length=256,
         help_text='The area that this BoundarySet covers, e.g. "Chicago" or "Illinois".')
-    hierarchy = models.CharField(max_length=2, blank=True,
-        choices=( ('F', 'Federal'),
-                  ('P', 'Provincial'),
-                  ('M', 'Municipal'),
-                  ('O', 'Other')))
     last_updated = models.DateField(
         help_text='The last time this data was updated from its authority (but not necessarily the date it is current as of).')
-    href = models.URLField(blank=True,
+    source_url = models.URLField(blank=True,
         help_text='The url this data was found at, if any.')
     notes = models.TextField(blank=True,
         help_text='Notes about loading this data, including any transformations that were applied to it.')
-    count = models.IntegerField(
-        help_text='Total number of features in this boundary set.')
-    metadata_fields = ListField(separator='|', blank=True,
-        help_text='What, if any, metadata fields were loaded from the original dataset.')
 
     class Meta:
         ordering = ('name',)
@@ -59,8 +50,9 @@ class BoundarySet(models.Model):
     def as_dict(self):
         r = {
             'boundaries_url': urlresolvers.reverse('boundaryservice_boundary_list', kwargs={'set_slug': self.slug}),
+            'last_updated': unicode(self.last_updated),
         }
-        for f in ('name', 'singular', 'authority', 'domain', 'href', 'notes', 'count', 'metadata_fields'):
+        for f in ('name', 'singular', 'authority', 'domain', 'source_url', 'notes'):
             r[f] = getattr(self, f)
         return r
 
@@ -70,10 +62,8 @@ class BoundarySet(models.Model):
             {
                 'url': urlresolvers.reverse('boundaryservice_set_detail', kwargs={'slug': s.slug}),
                 'boundaries_url': urlresolvers.reverse('boundaryservice_boundary_list', kwargs={'set_slug': s.slug}),
-                'boundaries_count': s.count,
                 'name': s.name,
                 'domain': s.domain,
-                'hierarchy': s.get_hierarchy_display(),
             } for s in sets
         ]
 
