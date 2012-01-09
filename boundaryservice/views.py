@@ -1,3 +1,4 @@
+from django.contrib.gis.db import models
 from django.http import Http404
 
 from boundaryservice.base_views import (ModelListView, ModelDetailView,
@@ -40,7 +41,19 @@ class BoundaryListView(ModelGeoListView):
                 shape = Boundary.objects.filter(slug=slug, set=set_slug).values_list('shape', flat=True)[0]
             except IndexError:
                 raise Http404
-            qs = qs.filter(shape__intersects=shape)
+            qs = qs.filter(models.Q(shape__covers=shape) | models.Q(shape__overlaps=shape))
+
+        if 'touches' in request.GET:
+            (set_slug, slug) = request.GET['touches'].split('/')
+            try:
+                shape = Boundary.objects.filter(slug=slug, set=set_slug).values_list('shape', flat=True)[0]
+            except IndexError:
+                raise Http404
+            qs = qs.filter(shape__touches=shape)
+
+        if 'sets' in request.GET:
+            set_slugs = request.GET['sets'].split(',')
+            qs = qs.filter(set__in=set_slugs)
 
         return qs
 
