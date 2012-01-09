@@ -13,9 +13,9 @@ from django.core.management.base import BaseCommand
 from django.db import connections, DEFAULT_DB_ALIAS, transaction
 from django.template.defaultfilters import slugify
 
-from boundaryservice.models import BoundarySet, Boundary
+import boundaryservice
+from boundaryservice.models import BoundarySet, Boundary, app_settings
 
-DEFAULT_SHAPEFILES_DIR = getattr(settings, 'SHAPEFILES_DIR', 'data/shapefiles')
 GEOMETRY_COLUMN = 'shape'
 
 class Command(BaseCommand):
@@ -24,7 +24,7 @@ class Command(BaseCommand):
         make_option('-r', '--reload', action='store_true', dest='reload',
             help='Reload BoundarySets that have already been imported.'),
         make_option('-d', '--data-dir', action='store', dest='data_dir', 
-            default=DEFAULT_SHAPEFILES_DIR,
+            default=app_settings.SHAPEFILES_DIR,
             help='Load shapefiles from this directory'),
         make_option('-e', '--except', action='store', dest='except',
             default=False, help='Don\'t load these kinds of Areas, comma-delimited.'),
@@ -39,21 +39,22 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # Load configuration
-        sys.path.append(options['data_dir'])
-        from definitions import SHAPEFILES
+        boundaryservice.autodiscover(options['data_dir'])
+
+        all_sources = boundaryservice.registry
 
         if options['only']:
             only = options['only'].split(',')
             # TODO: stripping whitespace here because optparse doesn't handle it correctly
-            sources = [s for s in SHAPEFILES if s.replace(' ', '') in only]
+            sources = [s for s in all_sources if s.replace(' ', '') in only]
         elif options['except']:
             exceptions = options['except'].upper().split(',')
             # See above
-            sources = [s for s in SHAPEFILES if s.replace(' ', '') not in exceptions]
+            sources = [s for s in all_sources if s.replace(' ', '') not in exceptions]
         else:
-            sources = [s for s in SHAPEFILES]
+            sources = [s for s in all_sources]
         
-        for kind, config in SHAPEFILES.items():
+        for kind, config in all_sources.items():
             if kind not in sources:
                 log.debug('Skipping %s.' % kind)
                 continue
@@ -70,20 +71,29 @@ class Command(BaseCommand):
 
         BoundarySet.objects.filter(name=kind).delete()
 
-        path = os.path.join(options['data_dir'], config['file'])
+        path = config['file']
         datasources = create_datasources(path)
 
         layer = datasources[0][0]
+
+        # Add some default values
+        if 'singular' not in config and kind.endswith('s'):
+            config['singular'] = kind[:-1]
+        if 'id_func' not in config:
+            config['id_func'] = lambda f: ''
+        if 'slug_func' not in config:
+            config['slug_func'] = config['name_func']
 
         # Create BoundarySet
         set = BoundarySet.objects.create(
             name=kind,
             singular=config['singular'],
-            authority=config['authority'],
-            domain=config['domain'],
-            last_updated=config['last_updated'],
-            href=config['href'],
-            notes=config['notes'],
+            authority=config.get('authority', ''),
+            domain=config.get('domain', ''),
+            last_updated=config.get('last_updated'),
+            source_url=config.get('source_url', ''),
+            notes=config.get('notes', ''),
+            licence_url=config.get('licence_url', ''),
         )
 
         for datasource in datasources:
@@ -132,7 +142,7 @@ class Command(BaseCommand):
             # Since Chicago is at approx. 42 degrees latitude this works out to an margin of 
             # roughly 80 meters latitude and 112 meters longitude.
             # Preserve topology prevents a shape from ever crossing over itself.
-            simple_geometry = geometry.geos.simplify(0.0001, preserve_topology=True)
+            simple_geometry = geometry.geos.simplify(app_settings.SIMPLE_SHAPE_TOLERANCE, preserve_topology=True)
             
             # Conversion may force multipolygons back to being polygons
             simple_geometry = self.polygon_to_multipolygon(simple_geometry.ogr)
@@ -143,7 +153,7 @@ class Command(BaseCommand):
             for field in layer.fields:
                 
                 # Decode string fields using encoding specified in definitions config
-                if config['encoding'] != '':
+                if config.get('encoding'):
                     try:
                         metadata[field] = feature.get(field).decode(config['encoding'])
                     # Only strings will be decoded, get value in normal way if int etc.
@@ -152,19 +162,24 @@ class Command(BaseCommand):
                 else:
                     metadata[field] = feature.get(field)
 
-            external_id = config['ider'](feature)
-            feature_name = config['namer'](feature)
+            external_id = str(config['id_func'](feature))
+            feature_name = config['name_func'](feature)
+            feature_slug = config['slug_func'](feature)
             
             # If encoding is specified, decode id and feature name
-            if config['encoding'] != '':
+            if config.get('encoding'):
                 external_id = external_id.decode(config['encoding'])
                 feature_name = feature_name.decode(config['encoding'])
+                feature_slug = feature_slug.decode(config['encoding'])
+
+            feature_slug = slugify(feature_slug)
 
             Boundary.objects.create(
                 set=set,
                 set_name=set.singular,
                 external_id=external_id,
                 name=feature_name,
+                slug=feature_slug,
                 metadata=metadata,
                 shape=geometry.wkt,
                 simple_shape=simple_geometry.wkt,

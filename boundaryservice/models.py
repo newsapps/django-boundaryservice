@@ -7,11 +7,12 @@ from django.template.defaultfilters import slugify
 from appconf import AppConf
 
 from boundaryservice.fields import ListField, JSONField
-from boundaryservice.utils import get_site_url_root
 
 class MyAppConf(AppConf):
     MAX_GEO_LIST_RESULTS = 80 # In a /boundary/shape query, if more than this
                         # number of resources are matched, throw an error
+    SHAPEFILES_DIR = './shapefiles'
+    SIMPLE_SHAPE_TOLERANCE = 0.0002
 
 app_settings = MyAppConf()
 
@@ -35,6 +36,8 @@ class BoundarySet(models.Model):
         help_text='The url this data was found at, if any.')
     notes = models.TextField(blank=True,
         help_text='Notes about loading this data, including any transformations that were applied to it.')
+    licence_url = models.URLField(blank=True,
+        help_text='The URL to the text of the licence this data is distributed under')
 
     class Meta:
         ordering = ('name',)
@@ -84,7 +87,7 @@ class Boundary(models.Model):
     shape = models.MultiPolygonField(
         help_text='The geometry of this boundary in EPSG:4326 projection.')
     simple_shape = models.MultiPolygonField(
-        help_text='The geometry of this boundary in EPSG:4326 projection and simplified to 0.0001 tolerance.')
+        help_text='The geometry of this boundary in EPSG:4326 projection and simplified to %s tolerance.' % app_settings.SIMPLE_SHAPE_TOLERANCE)
     centroid = models.PointField(
         null=True,
         help_text='The centroid (weighted center) of this boundary in EPSG:4326 projection.')
@@ -95,8 +98,6 @@ class Boundary(models.Model):
         unique_together = (('slug', 'set'))
 
     def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.name)
         return super(Boundary, self).save(*args, **kwargs)
 
     def __unicode__(self):
