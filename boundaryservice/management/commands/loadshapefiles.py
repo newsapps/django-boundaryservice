@@ -79,7 +79,6 @@ class Command(BaseCommand):
         set = BoundarySet.objects.create(
             name=kind,
             singular=config['singular'],
-            kind_first=config['kind_first'],
             authority=config['authority'],
             domain=config['domain'],
             last_updated=config['last_updated'],
@@ -164,17 +163,11 @@ class Command(BaseCommand):
                 external_id = external_id.decode(config['encoding'])
                 feature_name = feature_name.decode(config['encoding'])
 
-            if config['kind_first']:
-                display_name = '%s %s' % (config['singular'], feature_name)
-            else:
-                display_name = '%s %s' % (feature_name, config['singular'])
-
             Boundary.objects.create(
                 set=set,
                 set_name=set.singular,
                 external_id=external_id,
                 name=feature_name,
-                display_name=display_name,
                 metadata=metadata,
                 shape=geometry.wkt,
                 simple_shape=simple_geometry.wkt,

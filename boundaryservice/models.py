@@ -25,8 +25,6 @@ class BoundarySet(models.Model):
         help_text='Category of boundaries, e.g. "Community Areas".')
     singular = models.CharField(max_length=100,
         help_text='Name of a single boundary, e.g. "Community Area".')
-    kind_first = models.BooleanField(
-        help_text='If true, boundary display names will be "<kind> <name>" (e.g. Austin Community Area), otherwise "<name> <kind>" (e.g. 43rd Precinct).')
     authority = models.CharField(max_length=256,
         help_text='The entity responsible for this data\'s accuracy, e.g. "City of Chicago".')
     domain = models.CharField(max_length=256,
@@ -91,8 +89,6 @@ class Boundary(models.Model):
         help_text='The boundaries\' unique id in the source dataset, or a generated one.')
     name = models.CharField(max_length=192, db_index=True,
         help_text='The name of this boundary, e.g. "Austin".')
-    display_name = models.CharField(max_length=256,
-        help_text='The name and kind of the field to be used for display purposes.')
     metadata = JSONField(blank=True,
         help_text='The complete contents of the attribute table for this boundary from the source shapefile, structured as json.')
     shape = models.MultiPolygonField(
@@ -114,21 +110,20 @@ class Boundary(models.Model):
         return super(Boundary, self).save(*args, **kwargs)
 
     def __unicode__(self):
-        return self.display_name
+        return u"%s (%s)" % (self.name, self.set_name)
 
     def as_dict(self):
         return {
             'set_url': urlresolvers.reverse('boundaryservice_set_detail', kwargs={'slug': self.set_id}),
             'set_name': self.set_name,
             'name': self.name,
-            'display_name': self.display_name,
             'metadata': self.metadata,
             'external_id': self.external_id,
         }
 
     @staticmethod
     def prepare_queryset_for_get_dicts(qs):
-        return qs.values_list('slug', 'set', 'name', 'display_name', 'set_name')
+        return qs.values_list('slug', 'set', 'name', 'set_name')
 
     @staticmethod
     def get_dicts(boundaries):
@@ -136,9 +131,8 @@ class Boundary(models.Model):
             {
                 'url': urlresolvers.reverse('boundaryservice_boundary_detail', kwargs={'slug': b[0], 'set_slug': b[1]}),
                 'name': b[2],
-                'display_name': b[3],
                 'set_url': urlresolvers.reverse('boundaryservice_set_detail', kwargs={'slug': b[1]}),
-                'set_name': b[4],
+                'set_name': b[3],
             } for b in boundaries
         ]
 
