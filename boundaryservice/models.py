@@ -96,6 +96,7 @@ class Boundary(models.Model):
 
     class Meta:
         unique_together = (('slug', 'set'))
+        verbose_name_plural = 'Boundaries'
 
     def save(self, *args, **kwargs):
         return super(Boundary, self).save(*args, **kwargs)
