@@ -140,8 +140,8 @@ class ModelGeoListView(ModelListView):
 
         if qs.count() > app_settings.MAX_GEO_LIST_RESULTS:
             return HttpResponseForbidden(
-                "Spatial-list queries cannot return more than %d resources. Please filter your query."
-                % app_settings.MAX_GEO_LIST_RESULTS)
+                "Spatial-list queries cannot return more than %d resources; this query would return %s. Please filter your query."
+                % (app_settings.MAX_GEO_LIST_RESULTS, qs.count()))
 
         format = request.GET.get('format', 'json')
 
