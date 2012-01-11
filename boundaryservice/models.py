@@ -11,7 +11,7 @@ from boundaryservice.fields import ListField, JSONField
 class MyAppConf(AppConf):
     MAX_GEO_LIST_RESULTS = 80 # In a /boundary/shape query, if more than this
                         # number of resources are matched, throw an error
-    SHAPEFILES_DIR = './shapefiles'
+    SHAPEFILES_DIR = './data/shapefiles'
     SIMPLE_SHAPE_TOLERANCE = 0.0002
 
 app_settings = MyAppConf()
