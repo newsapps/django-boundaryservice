@@ -60,6 +60,8 @@ class BoundaryListView(ModelGeoListView):
     def get_qs(self, request, set_slug=None):
         qs = super(BoundaryListView, self).get_qs(request)
         if set_slug:
+            if not BoundarySet.objects.filter(slug=set_slug).exists():
+                raise Http404
             return qs.filter(set=set_slug)
         return qs
 
