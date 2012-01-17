@@ -135,6 +135,13 @@ class Command(BaseCommand):
         else:
             layer_srs = layer.srs
 
+        # Simplification can be configured but default is to create simplified
+        # geometry field by collapsing points within 1/1000th of a degree.
+        # For reference, Chicago is at approx. 42 degrees latitude this works
+        # out to a margin of roughly 80 meters latitude and 112 meters
+        # longitude for Chicago area.
+        simplification = config.get('simplification', 0.0001)
+
         # Create a convertor to turn the source data into
         transformer = CoordTransform(layer_srs, db_srs)
 
@@ -143,12 +150,10 @@ class Command(BaseCommand):
             geometry = self.polygon_to_multipolygon(feature.geom)
             geometry.transform(transformer)
 
-            # Create simplified geometry field by collapsing points within 1/1000th of a degree.
-            # Since Chicago is at approx. 42 degrees latitude this works out to an margin of 
-            # roughly 80 meters latitude and 112 meters longitude.
             # Preserve topology prevents a shape from ever crossing over itself.
-            simple_geometry = geometry.geos.simplify(0.0001, preserve_topology=True)
-            
+            simple_geometry = geometry.geos.simplify(simplification,
+                                                     preserve_topology=True)
+
             # Conversion may force multipolygons back to being polygons
             simple_geometry = self.polygon_to_multipolygon(simple_geometry.ogr)
 
