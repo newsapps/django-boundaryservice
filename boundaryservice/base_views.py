@@ -4,6 +4,7 @@
 import re
 
 from django.contrib.gis.measure import D
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, Http404, HttpResponseForbidden
 from django.template.defaultfilters import escapejs
 from django.utils import simplejson as json
@@ -78,6 +79,9 @@ class ModelListView(APIView):
                 qs = qs.filter(**{filter_field + '__' + filter_type: val})
         return qs
 
+    def get_related_resources(self, request, qs, meta):
+        return {}
+
     def get(self, request, **kwargs):
         qs = self.get_qs(request, **kwargs)
         qs = self.filter(request, qs)
@@ -86,6 +90,9 @@ class ModelListView(APIView):
         paginator = Paginator(request.GET, qs, resource_uri=request.path)
         result = paginator.page()
         result['objects'] = self.model.get_dicts(result['objects'])
+        related = self.get_related_resources(request, qs, result['meta'])
+        if related:
+            result['meta']['related'] = related
         return result
 
 class ModelGeoListView(ModelListView):
@@ -175,7 +182,10 @@ class ModelDetailView(APIView):
         self.base_qs = self.model.objects.all()
 
     def get(self, request, **kwargs):
-        return self.get_object(request, self.base_qs, **kwargs).as_dict()
+        try:
+            return self.get_object(request, self.base_qs, **kwargs).as_dict()
+        except ObjectDoesNotExist:
+            raise Http404
 
 class ModelGeoDetailView(ModelDetailView):
     """Adds geospatial support to ModelDetailView
@@ -197,7 +207,10 @@ class ModelGeoDetailView(ModelDetailView):
         if field not in self.allowed_geo_fields:
             raise Http404
 
-        obj = self.get_object(request, self.base_qs.only(field, self.name_field), **kwargs)
+        try:
+            obj = self.get_object(request, self.base_qs.only(field, self.name_field), **kwargs)
+        except ObjectDoesNotExist:
+            raise Http404
 
         geom = getattr(obj, field)
         name = getattr(obj, self.name_field)

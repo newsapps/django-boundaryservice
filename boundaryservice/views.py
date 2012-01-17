@@ -3,7 +3,7 @@ from django.http import Http404
 
 from boundaryservice.base_views import (ModelListView, ModelDetailView,
                                         ModelGeoListView, ModelGeoDetailView)
-from boundaryservice.models import BoundarySet, Boundary
+from boundaryservice.models import BoundarySet, Boundary, app_settings
 
 class BoundarySetListView(ModelListView):
     """ e.g. /boundary-set/ """
@@ -64,6 +64,23 @@ class BoundaryListView(ModelGeoListView):
                 raise Http404
             return qs.filter(set=set_slug)
         return qs
+
+    def get_related_resources(self, request, qs, meta):
+        r = super(BoundaryListView, self).get_related_resources(request, qs, meta)
+        if meta['total_count'] == 0 or meta['total_count'] > app_settings.MAX_GEO_LIST_RESULTS:
+            return r
+
+        geo_url = request.path + r'%s'
+        if request.META['QUERY_STRING']:
+            geo_url += '?' + request.META['QUERY_STRING']
+
+        r.update(
+            shapes_url=geo_url % 'shape',
+            simple_shapes_url=geo_url % 'simple_shape',
+            centroids_url=geo_url % 'centroid'
+        )
+        return r
+
 
 class BoundaryObjectGetterMixin(object):
 
