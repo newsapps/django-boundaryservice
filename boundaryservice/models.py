@@ -5,8 +5,7 @@ from django.core import urlresolvers
 from django.template.defaultfilters import slugify
 
 from appconf import AppConf
-
-from boundaryservice.fields import ListField, JSONField
+from jsonfield import JSONField
 
 class MyAppConf(AppConf):
     MAX_GEO_LIST_RESULTS = 80 # In a /boundary/shape query, if more than this
