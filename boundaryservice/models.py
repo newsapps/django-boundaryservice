@@ -8,7 +8,7 @@ from appconf import AppConf
 from jsonfield import JSONField
 
 class MyAppConf(AppConf):
-    MAX_GEO_LIST_RESULTS = 80 # In a /boundary/shape query, if more than this
+    MAX_GEO_LIST_RESULTS = 350 # In a /boundary/shape query, if more than this
                         # number of resources are matched, throw an error
     SHAPEFILES_DIR = './data/shapefiles'
     SIMPLE_SHAPE_TOLERANCE = 0.0002
@@ -118,9 +118,10 @@ class Boundary(models.Model):
                 'boundary_set_url': urlresolvers.reverse('boundaryservice_set_detail', kwargs={'slug': self.set_id}),
                 'shape_url': my_url + 'shape',
                 'centroid_url': my_url + 'centroid',
-                'simple_shape_url': my_url + 'simple_shape'
+                'simple_shape_url': my_url + 'simple_shape',
+                'boundaries_url': urlresolvers.reverse('boundaryservice_boundary_list', kwargs={'set_slug': self.set_id}),
             },
-            'set_name': self.set_name,
+            'boundary_set_name': self.set_name,
             'name': self.name,
             'metadata': self.metadata,
             'external_id': self.external_id,
