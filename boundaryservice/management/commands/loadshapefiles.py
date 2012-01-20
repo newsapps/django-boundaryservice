@@ -147,32 +147,16 @@ class Command(BaseCommand):
             # Conversion may force multipolygons back to being polygons
             simple_geometry = self.polygon_to_multipolygon(simple_geometry.ogr)
 
-            # Extract metadata into a dictionary
-            metadata = {}
+            feature = UnicodeFeature(feature, encoding=config.get('encoding', 'ascii'))
 
-            for field in layer.fields:
-                
-                # Decode string fields using encoding specified in definitions config
-                if config.get('encoding'):
-                    try:
-                        metadata[field] = feature.get(field).decode(config['encoding'])
-                    # Only strings will be decoded, get value in normal way if int etc.
-                    except AttributeError:
-                        metadata[field] = feature.get(field)
-                else:
-                    metadata[field] = feature.get(field)
+            # Extract metadata into a dictionary
+            metadata = dict(
+                ( (field, feature.get(field)) for field in layer.fields )
+            )
 
             external_id = str(config['id_func'](feature))
             feature_name = config['name_func'](feature)
-            feature_slug = config['slug_func'](feature)
-            
-            # If encoding is specified, decode id and feature name
-            if config.get('encoding'):
-                external_id = external_id.decode(config['encoding'])
-                feature_name = feature_name.decode(config['encoding'])
-                feature_slug = feature_slug.decode(config['encoding'])
-
-            feature_slug = slugify(feature_slug)
+            feature_slug = slugify(config['slug_func'](feature))
 
             Boundary.objects.create(
                 set=set,
@@ -201,6 +185,18 @@ def create_datasources(path):
         if fn.endswith('.shp'):
             sources.append(DataSource(fn))
     return sources
+
+class UnicodeFeature(object):
+
+    def __init__(self, feature, encoding='ascii'):
+        self.feature = feature
+        self.encoding = encoding
+
+    def get(self, field):
+        val = self.feature.get(field)
+        if isinstance(val, str):
+            return val.decode(self.encoding)
+        return val
     
 def temp_shapefile_from_zip(zip_path):
     """Given a path to a ZIP file, unpack it into a temp dir and return the path
