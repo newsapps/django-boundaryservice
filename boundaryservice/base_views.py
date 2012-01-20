@@ -6,6 +6,7 @@ import re
 from django.contrib.gis.measure import D
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, Http404, HttpResponseForbidden
+from django.template import loader, RequestContext
 from django.template.defaultfilters import escapejs
 from django.utils import simplejson as json
 from django.views.generic import View
@@ -29,10 +30,23 @@ class APIView(View):
     allow_jsonp = True
     content_type = 'application/json; charset=utf-8'
 
+    def apibrowser_response(self, request, result):
+        if isinstance(result, RawJSONResponse):
+            result = json.loads(result.content)
+        jsonresult = json.dumps(result, indent=4)
+        t = loader.get_template('boundaryservice/apibrowser.html')
+        c = RequestContext(request, {
+            'json': jsonresult
+        })
+        return HttpResponse(t.render(c))
+
+
     def dispatch(self, request, *args, **kwargs):
         result = super(APIView, self).dispatch(request, *args, **kwargs)
         if isinstance(result, HttpResponse):
             return result
+        if request.GET.get('format') == 'apibrowser':
+            return self.apibrowser_response(request, result)
         resp = HttpResponse(content_type=self.content_type)
         callback = ''
         if self.allow_jsonp and 'callback' in request.GET:

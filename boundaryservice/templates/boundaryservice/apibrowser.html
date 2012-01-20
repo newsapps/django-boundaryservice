@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Browser</title>
+    <style type="text/css">
+        pre .structure {
+            color: red;
+        }
+        pre .key {
+            color: blue;
+        }
+        pre .value {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+<script type="text/javascript">
+function escape(string) {
+    if (typeof(string) != 'string') {
+        return '';
+    }
+    return string.replace(/&(?!\w+;|#\d+;|#x[\da-f]+;)/gi, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27').replace(/\//g,'&#x2F;');
+}
+function formatJSON(content) {
+    var lines = content.split('\n');
+    var l;
+    var r = [];
+    var structure = /^(\s*)([{}\[\]])(,?)\s*$/;
+    for (var i = 0; i < lines.length; i++) {
+        l = lines[i];
+        var smatch = l.match(structure);
+        if (smatch) {
+            r.push(smatch[1] + '<span class="structure">' + smatch[2] + '</span>' + smatch[3]);
+        }
+        else {
+            var match = l.match(/^(\s+)("[^"]+"): (.+?)(,?)\s*$/);
+            if (!match) {
+                r.push(l);
+            }
+            else {
+                var val = match[1] + '<span class="key">' + escape(match[2])
+                    + '</span>: ';
+                if (structure.test(match[3])) {
+                    val += '<span class="structure">' + escape(match[3]) + '</span>';
+                }
+                else {
+                    val += '<span class="value">';
+                    if (
+                            (/_url"$/.test(match[2]) || match[2] === '"next"' || match[2] == '"previous"')
+                            && /^"(h|\/)/.test(match[3])) {
+                        console.log(match[3]);
+                        var url = match[3].substr(1, match[3].length-2);
+                        val += '"<a href="' + url;
+                        if (url.substr(0, 1) === '/') {
+                            url = url.replace(/[?&]format=apibrowser/, '');
+                            if (url.indexOf('?') === -1) {
+                                val += '?'
+                            }
+                            else {
+                                val += '&'
+                            }
+                            val += 'format=apibrowser';
+                        }
+                        val += '">' + escape(url) + '</a>"';
+                    }
+                    else {
+                        val += escape(match[3]);
+                    }
+                    val += '</span>';
+                }
+                r.push(val + match[4]);
+            }
+        }
+    }
+    return r.join('\n');
+}
+    
+document.write('<pre>');
+document.write(formatJSON("{{ json|escapejs }}"));
+document.write('</pre>');
+</script>
+</body>
+</html>
