@@ -56,7 +56,7 @@ class BoundarySet(models.Model):
             },
             'last_updated': unicode(self.last_updated),
         }
-        for f in ('name', 'singular', 'authority', 'domain', 'source_url', 'notes'):
+        for f in ('name', 'singular', 'authority', 'domain', 'source_url', 'notes', 'licence_url'):
             r[f] = getattr(self, f)
         return r
 
