@@ -20,8 +20,8 @@ class BoundarySetAdmin(admin.ModelAdmin):
 admin.site.register(BoundarySet, BoundarySetAdmin)
 
 class BoundaryAdmin(OSMGeoAdmin):
-    list_display = ('kind', 'name', 'external_id')
+    list_display = ('name', 'external_id', 'set')
     list_display_links = ('name', 'external_id')
-    list_filter = ('kind',)
+    list_filter = ('set',)
 
 admin.site.register(Boundary, BoundaryAdmin)

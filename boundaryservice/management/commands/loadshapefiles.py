@@ -1,5 +1,7 @@
-import logging 
-log = logging.getLogger('boundaries.api.load_shapefiles')
+#coding: utf8
+
+import logging
+log = logging.getLogger(__name__)
 from optparse import make_option
 import os, os.path
 import sys
@@ -10,20 +12,21 @@ from tempfile import mkdtemp
 from django.conf import settings
 from django.contrib.gis.gdal import CoordTransform, DataSource, OGRGeometry, OGRGeomType
 from django.core.management.base import BaseCommand
-from django.db import connections, DEFAULT_DB_ALIAS
+from django.db import connections, DEFAULT_DB_ALIAS, transaction
+from django.template.defaultfilters import slugify
 
-from boundaryservice.models import BoundarySet, Boundary
+import boundaryservice
+from boundaryservice.models import BoundarySet, Boundary, app_settings
 
-DEFAULT_SHAPEFILES_DIR = getattr(settings, 'SHAPEFILES_DIR', 'data/shapefiles')
 GEOMETRY_COLUMN = 'shape'
 
 class Command(BaseCommand):
     help = 'Import boundaries described by shapefiles.'
     option_list = BaseCommand.option_list + (
-        make_option('-c', '--clear', action='store_true', dest='clear',
-            help='Clear all jurisdictions in the DB.'),
+        make_option('-r', '--reload', action='store_true', dest='reload',
+            help='Reload BoundarySets that have already been imported.'),
         make_option('-d', '--data-dir', action='store', dest='data_dir', 
-            default=DEFAULT_SHAPEFILES_DIR,
+            default=app_settings.SHAPEFILES_DIR,
             help='Load shapefiles from this directory'),
         make_option('-e', '--except', action='store', dest='except',
             default=False, help='Don\'t load these kinds of Areas, comma-delimited.'),
@@ -38,78 +41,72 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # Load configuration
-        sys.path.append(options['data_dir'])
-        from definitions import SHAPEFILES
+        boundaryservice.autodiscover(options['data_dir'])
 
-        if options['database']:
-            database = options['database']
+        all_sources = boundaryservice.registry
 
         if options['only']:
             only = options['only'].split(',')
             # TODO: stripping whitespace here because optparse doesn't handle it correctly
-            sources = [s for s in SHAPEFILES if s.replace(' ', '') in only]
+            sources = [s for s in all_sources if s.replace(' ', '') in only]
         elif options['except']:
             exceptions = options['except'].upper().split(',')
             # See above
-            sources = [s for s in SHAPEFILES if s.replace(' ', '') not in exceptions]
+            sources = [s for s in all_sources if s.replace(' ', '') not in exceptions]
         else:
-            sources = [s for s in SHAPEFILES]
+            sources = [s for s in all_sources]
         
-        for kind, config in SHAPEFILES.items():
+        for kind, config in all_sources.items():
             if kind not in sources:
-                log.info('Skipping %s.' % kind)
+                log.debug('Skipping %s.' % kind)
                 continue
 
-            log.info('Processing %s.' % kind)
+            if (not options['reload']) and BoundarySet.objects.filter(name=kind).exists():
+                log.info('Already loaded %s, skipping.' % kind)
+                continue
 
-            if options['clear']:
-                set = None
+            self.load_set(kind, config, options)
 
-                try:
-                    set = BoundarySet.objects.get(name=kind)
-                    if set:
-                        log.info('Clearing old %s.' % kind)
-                        set.boundaries.all().delete()
-                        set.delete()
-                        log.info('Loading new %s.' % kind)
-                except BoundarySet.DoesNotExist:
-                    log.info("No existing boundary set of kind [%s] so nothing to delete" % kind)
+    @transaction.commit_on_success
+    def load_set(self, kind, config, options):
+        log.info('Processing %s.' % kind)
 
-            path = os.path.join(options['data_dir'], config['file'])
-            datasources = create_datasources(path)
+        BoundarySet.objects.filter(name=kind).delete()
 
-            layer = datasources[0][0]
+        path = config['file']
+        datasources = create_datasources(path)
 
-            # Create BoundarySet
-            try:
-                set = BoundarySet.objects.get(name=kind)
-                log.info("Using existing BoundarySet [%s]" % set.slug)
-            except BoundarySet.DoesNotExist:
-                set = BoundarySet.objects.create(
-                    name=kind,
-                    singular=config['singular'],
-                    kind_first=config['kind_first'],
-                    authority=config['authority'],
-                    domain=config['domain'],
-                    last_updated=config['last_updated'],
-                    href=config['href'],
-                    notes=config['notes'],
-                    count=len(layer),
-                    metadata_fields=layer.fields)
-                log.info("Created new BoundarySet [%s]" % set.slug)
+        layer = datasources[0][0]
 
-            for datasource in datasources:
-                log.info("Loading %s from %s" % (kind, datasource.name))
-                # Assume only a single-layer in shapefile
-                if datasource.layer_count > 1:
-                    log.warn('%s shapefile [%s] has multiple layers, using first.' % (datasource.name, kind))
-                layer = datasource[0]    
-                self.add_boundaries_for_layer(config, layer, set, database)
-            
-            set.count = Boundary.objects.filter(set=set).count() # sync this with reality
-            set.save()
-            # TODO: work through additional shapefiles, increment set.count
-            log.info('%s count: %i' % (kind, set.count))
+        # Add some default values
+        if 'singular' not in config and kind.endswith('s'):
+            config['singular'] = kind[:-1]
+        if 'id_func' not in config:
+            config['id_func'] = lambda f: ''
+        if 'slug_func' not in config:
+            config['slug_func'] = config['name_func']
+
+        # Create BoundarySet
+        set = BoundarySet.objects.create(
+            name=kind,
+            singular=config['singular'],
+            authority=config.get('authority', ''),
+            domain=config.get('domain', ''),
+            last_updated=config.get('last_updated'),
+            source_url=config.get('source_url', ''),
+            notes=config.get('notes', ''),
+            licence_url=config.get('licence_url', ''),
+        )
+
+        for datasource in datasources:
+            log.info("Loading %s from %s" % (kind, datasource.name))
+            # Assume only a single-layer in shapefile
+            if datasource.layer_count > 1:
+                log.warn('%s shapefile [%s] has multiple layers, using first.' % (datasource.name, kind))
+            layer = datasource[0]
+            self.add_boundaries_for_layer(config, layer, set, options['database'])
+
+        log.info('%s count: %i' % (kind, Boundary.objects.filter(set=set).count()))
 
     def polygon_to_multipolygon(self, geom):
         """
@@ -147,45 +144,28 @@ class Command(BaseCommand):
             # Since Chicago is at approx. 42 degrees latitude this works out to an margin of 
             # roughly 80 meters latitude and 112 meters longitude.
             # Preserve topology prevents a shape from ever crossing over itself.
-            simple_geometry = geometry.geos.simplify(0.0001, preserve_topology=True)
+            simple_geometry = geometry.geos.simplify(app_settings.SIMPLE_SHAPE_TOLERANCE, preserve_topology=True)
             
             # Conversion may force multipolygons back to being polygons
             simple_geometry = self.polygon_to_multipolygon(simple_geometry.ogr)
 
+            feature = UnicodeFeature(feature, encoding=config.get('encoding', 'ascii'))
+
             # Extract metadata into a dictionary
-            metadata = {}
+            metadata = dict(
+                ( (field, feature.get(field)) for field in layer.fields )
+            )
 
-            for field in layer.fields:
-                
-                # Decode string fields using encoding specified in definitions config
-                if config['encoding'] != '':
-                    try:
-                        metadata[field] = feature.get(field).decode(config['encoding'])
-                    # Only strings will be decoded, get value in normal way if int etc.
-                    except AttributeError:
-                        metadata[field] = feature.get(field)
-                else:
-                    metadata[field] = feature.get(field)
-
-            external_id = config['ider'](feature)
-            feature_name = config['namer'](feature)
-            
-            # If encoding is specified, decode id and feature name
-            if config['encoding'] != '':
-                external_id = external_id.decode(config['encoding'])
-                feature_name = feature_name.decode(config['encoding'])
-
-            if config['kind_first']:
-                display_name = '%s %s' % (config['singular'], feature_name)
-            else:
-                display_name = '%s %s' % (feature_name, config['singular'])
+            external_id = str(config['id_func'](feature))
+            feature_name = config['name_func'](feature)
+            feature_slug = slugify(config['slug_func'](feature).replace(u'—', '-'))
 
             Boundary.objects.create(
                 set=set,
-                kind=config['singular'],
+                set_name=set.singular,
                 external_id=external_id,
                 name=feature_name,
-                display_name=display_name,
+                slug=feature_slug,
                 metadata=metadata,
                 shape=geometry.wkt,
                 simple_shape=simple_geometry.wkt,
@@ -207,6 +187,18 @@ def create_datasources(path):
         if fn.endswith('.shp'):
             sources.append(DataSource(fn))
     return sources
+
+class UnicodeFeature(object):
+
+    def __init__(self, feature, encoding='ascii'):
+        self.feature = feature
+        self.encoding = encoding
+
+    def get(self, field):
+        val = self.feature.get(field)
+        if isinstance(val, str):
+            return val.decode(self.encoding)
+        return val
     
 def temp_shapefile_from_zip(zip_path):
     """Given a path to a ZIP file, unpack it into a temp dir and return the path

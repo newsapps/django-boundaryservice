@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     name = "django-boundaryservice",
@@ -17,6 +17,7 @@ setup(
         'boundaryservice.management.commands'
     ],
     install_requires = [
-        'django-tastypie==0.9.9'
+        'django-tastypie==0.9.9',
+        'django-jsonfield>=0.7.1',
     ]
 )

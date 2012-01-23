@@ -1,0 +1,9 @@
+pre .structure {
+    color: red;
+}
+pre .key {
+    color: blue;
+}
+pre .value {
+    color: green;
+}
