@@ -8,7 +8,7 @@ from boundaryservice.models import BoundarySet, Boundary, app_settings
 class BoundarySetListView(ModelListView):
     """ e.g. /boundary-set/ """
 
-    filterable_fields = ['name', 'domain', 'hierarchy']
+    filterable_fields = ['name', 'domain']
 
     model = BoundarySet
 
@@ -72,7 +72,7 @@ class BoundaryListView(ModelGeoListView):
 
         geo_url = request.path + r'%s'
         if request.META['QUERY_STRING']:
-            geo_url += '?' + request.META['QUERY_STRING']
+            geo_url += '?' + request.META['QUERY_STRING'].replace('%', '%%')
 
         r.update(
             shapes_url=geo_url % 'shape',

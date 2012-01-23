@@ -55,7 +55,7 @@ class APIView(View):
         if isinstance(result, RawJSONResponse):
             resp.write(result.content)
         else:
-            json.dump(result, resp, indent=4)
+            json.dump(result, resp, indent=(4 if request.GET.get('pretty') else None))
         if callback:
             resp.write(');')
         return resp
@@ -166,7 +166,7 @@ class ModelGeoListView(ModelListView):
 
         format = request.GET.get('format', 'json')
 
-        if format == 'json':
+        if format in ('json', 'apibrowser'):
             strings = [u'{ "objects" : [ ']
             strings.append(','.join( (u'{"name": "%s","%s":%s}' % (escapejs(x[1]),field,x[0].geojson)
                         for x in qs.values_list(field, self.name_field) )))
@@ -229,7 +229,7 @@ class ModelGeoDetailView(ModelDetailView):
         geom = getattr(obj, field)
         name = getattr(obj, self.name_field)
         format = request.GET.get('format', 'json')
-        if format == 'json':
+        if format in ('json', 'apibrowser'):
             return RawJSONResponse(geom.geojson)
         elif format == 'wkt':
             return HttpResponse(geom.wkt, mimetype="text/plain")

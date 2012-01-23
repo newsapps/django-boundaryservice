@@ -140,7 +140,7 @@ class Boundary(models.Model):
                 'related': {
                     'boundary_set_url': urlresolvers.reverse('boundaryservice_set_detail', kwargs={'slug': b[1]}),
                 },
-                'set_name': b[3],
+                'boundary_set_name': b[3],
             } for b in boundaries
         ]
 
