@@ -5,12 +5,11 @@
     <style type="text/css">
         {% include "boundaryservice/jsonformatter.css" %}
     </style>
+    <script src="{{ STATIC_URL }}js/jsonformatter.js"></script>
 </head>
 <body>
 
 <script type="text/javascript">
-{% include "boundaryservice/jsonformatter.js" %}
-
 document.write('<pre>');
 document.write(formatJSON("{{ json|escapejs }}"));
 document.write('</pre>');
