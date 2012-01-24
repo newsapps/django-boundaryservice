@@ -77,7 +77,11 @@ SHAPEFILES = {
         'encoding': '',
         # SRID of the geometry data in the shapefile if it can not be inferred from an accompanying .prj file
         # This is normally not necessary and can be left undefined or set to an empty string to maintain the default behavior
-        'srid': ''
+        'srid': '',
+        # Simplification tolerance to use when creating the simple_geometry
+        # column for this shapefile, larger numbers create polygons with fewer
+        # points.
+        'simplification': 0.0001,
     }
 }
 """
