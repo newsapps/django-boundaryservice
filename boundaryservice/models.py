@@ -49,6 +49,9 @@ class BoundarySet(models.Model):
     def __unicode__(self):
         return self.name
 
+    name_plural = property(lambda s: s.name)
+    name_singular = property(lambda s: s.singular)
+
     def as_dict(self):
         r = {
             'related': {
@@ -56,7 +59,7 @@ class BoundarySet(models.Model):
             },
             'last_updated': unicode(self.last_updated),
         }
-        for f in ('name', 'singular', 'authority', 'domain', 'source_url', 'notes', 'licence_url'):
+        for f in ('name_plural', 'name_singular', 'authority', 'domain', 'source_url', 'notes', 'licence_url'):
             r[f] = getattr(self, f)
         return r
 
