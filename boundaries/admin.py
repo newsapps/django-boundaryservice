@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.gis.admin import OSMGeoAdmin
 from tastypie.models import ApiAccess, ApiKey
 
-from boundaryservice.models import BoundarySet, Boundary
+from boundaries.models import BoundarySet, Boundary
 
 class ApiAccessAdmin(admin.ModelAdmin):
     pass

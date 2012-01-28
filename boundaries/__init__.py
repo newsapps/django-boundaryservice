@@ -34,7 +34,7 @@ def attr(name):
 def _clean_string(s):
     if re.search(r'[A-Z]', s) and not re.search(r'[a-z]', s):
         # WE'RE IN UPPERCASE
-        from boundaryservice.titlecase import titlecase
+        from boundaries.titlecase import titlecase
         s = titlecase(s)
     s = re.sub(r'(?u)\s', ' ', s)
     s = re.sub(r'( ?-- ?| - )', u'—', s)

@@ -13,8 +13,8 @@ from django.views.generic import View
 
 from tastypie.paginator import Paginator
 
-from boundaryservice import kml
-from boundaryservice.models import app_settings
+from boundaries import kml
+from boundaries.models import app_settings
 
 class RawJSONResponse(object):
     """APIView subclasses can return these if they have
@@ -34,7 +34,7 @@ class APIView(View):
         if isinstance(result, RawJSONResponse):
             result = json.loads(result.content)
         jsonresult = json.dumps(result, indent=4)
-        t = loader.get_template('boundaryservice/apibrowser.html')
+        t = loader.get_template('boundaries/apibrowser.html')
         c = RequestContext(request, {
             'json': jsonresult
         })

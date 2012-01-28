@@ -15,8 +15,8 @@ from django.core.management.base import BaseCommand
 from django.db import connections, DEFAULT_DB_ALIAS, transaction
 from django.template.defaultfilters import slugify
 
-import boundaryservice
-from boundaryservice.models import BoundarySet, Boundary, app_settings
+import boundaries
+from boundaries.models import BoundarySet, Boundary, app_settings
 
 GEOMETRY_COLUMN = 'shape'
 
@@ -41,9 +41,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # Load configuration
-        boundaryservice.autodiscover(options['data_dir'])
+        boundaries.autodiscover(options['data_dir'])
 
-        all_sources = boundaryservice.registry
+        all_sources = boundaries.registry
 
         if options['only']:
             only = options['only'].split(',')

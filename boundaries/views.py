@@ -1,9 +1,9 @@
 from django.contrib.gis.db import models
 from django.http import Http404
 
-from boundaryservice.base_views import (ModelListView, ModelDetailView,
+from boundaries.base_views import (ModelListView, ModelDetailView,
                                         ModelGeoListView, ModelGeoDetailView)
-from boundaryservice.models import BoundarySet, Boundary, app_settings
+from boundaries.models import BoundarySet, Boundary, app_settings
 
 class BoundarySetListView(ModelListView):
     """ e.g. /boundary-set/ """

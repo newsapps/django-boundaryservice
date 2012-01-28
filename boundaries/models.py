@@ -55,7 +55,7 @@ class BoundarySet(models.Model):
     def as_dict(self):
         r = {
             'related': {
-                'boundaries_url': urlresolvers.reverse('boundaryservice_boundary_list', kwargs={'set_slug': self.slug}),
+                'boundaries_url': urlresolvers.reverse('boundaries_boundary_list', kwargs={'set_slug': self.slug}),
             },
             'last_updated': unicode(self.last_updated),
         }
@@ -67,9 +67,9 @@ class BoundarySet(models.Model):
     def get_dicts(sets):
         return [
             {
-                'url': urlresolvers.reverse('boundaryservice_set_detail', kwargs={'slug': s.slug}),
+                'url': urlresolvers.reverse('boundaries_set_detail', kwargs={'slug': s.slug}),
                 'related': {
-                    'boundaries_url': urlresolvers.reverse('boundaryservice_boundary_list', kwargs={'set_slug': s.slug}),
+                    'boundaries_url': urlresolvers.reverse('boundaries_boundary_list', kwargs={'set_slug': s.slug}),
                 },
                 'name': s.name,
                 'domain': s.domain,
@@ -112,17 +112,17 @@ class Boundary(models.Model):
 
     @models.permalink
     def get_absolute_url(self):
-        return 'boundaryservice_boundary_detail', [], {'set_slug': self.set_id, 'slug': self.slug}
+        return 'boundaries_boundary_detail', [], {'set_slug': self.set_id, 'slug': self.slug}
 
     def as_dict(self):
         my_url = self.get_absolute_url()
         return {
             'related': {
-                'boundary_set_url': urlresolvers.reverse('boundaryservice_set_detail', kwargs={'slug': self.set_id}),
+                'boundary_set_url': urlresolvers.reverse('boundaries_set_detail', kwargs={'slug': self.set_id}),
                 'shape_url': my_url + 'shape',
                 'centroid_url': my_url + 'centroid',
                 'simple_shape_url': my_url + 'simple_shape',
-                'boundaries_url': urlresolvers.reverse('boundaryservice_boundary_list', kwargs={'set_slug': self.set_id}),
+                'boundaries_url': urlresolvers.reverse('boundaries_boundary_list', kwargs={'set_slug': self.set_id}),
             },
             'boundary_set_name': self.set_name,
             'name': self.name,
@@ -138,10 +138,10 @@ class Boundary(models.Model):
     def get_dicts(boundaries):
         return [
             {
-                'url': urlresolvers.reverse('boundaryservice_boundary_detail', kwargs={'slug': b[0], 'set_slug': b[1]}),
+                'url': urlresolvers.reverse('boundaries_boundary_detail', kwargs={'slug': b[0], 'set_slug': b[1]}),
                 'name': b[2],
                 'related': {
-                    'boundary_set_url': urlresolvers.reverse('boundaryservice_set_detail', kwargs={'slug': b[1]}),
+                    'boundary_set_url': urlresolvers.reverse('boundaries_set_detail', kwargs={'slug': b[1]}),
                 },
                 'boundary_set_name': b[3],
             } for b in boundaries
