@@ -3,7 +3,15 @@
 <head>
     <title>API Browser</title>
     <style type="text/css">
-        {% include "boundaries/jsonformatter.css" %}
+        pre .structure {
+            color: red;
+        }
+        pre .key {
+            color: blue;
+        }
+        pre .value {
+            color: green;
+        }
     </style>
     <script src="{{ STATIC_URL }}js/jsonformatter.js"></script>
 </head>
