@@ -8,6 +8,10 @@ boundaries.register('Federal electoral districts', # The name of the boundary se
     singular='Federal electoral district', # If this were omitted, the same value would be generated
     # Geographic extents which the boundary set encompasses
     domain='Canada',
+    # Path to the shapefile directory. Relative to the current file, so if this file
+    # is in the same directory as the shapefile -- usually the case -- you can omit
+    # this parameter.
+    file='',
     # Last time the source was updated or checked for new data
     last_updated=date(1970, 1, 1),
     # A function that's passed the feature and should return a name string
