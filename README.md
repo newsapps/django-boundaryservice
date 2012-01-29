@@ -6,6 +6,8 @@ This repository provides an API to geographic boundaries. It is based on the Chi
 
 The [represent-canada](http://github.com/opennorth/represent-canada) repository provides a full sample app.
 
+API documentation is available at [represent.opennorth.ca/api/](http://represent.opennorth.ca/api/#boundaryset).
+
 ## Installation
 
 Install the package:
