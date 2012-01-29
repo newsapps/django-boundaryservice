@@ -2,6 +2,7 @@
 """
 
 import re
+from urllib import urlencode
 
 from django.contrib.gis.measure import D
 from django.core.exceptions import ObjectDoesNotExist
@@ -30,17 +31,6 @@ class APIView(View):
     allow_jsonp = True
     content_type = 'application/json; charset=utf-8'
 
-    def apibrowser_response(self, request, result):
-        if isinstance(result, RawJSONResponse):
-            result = json.loads(result.content)
-        jsonresult = json.dumps(result, indent=4)
-        t = loader.get_template('boundaries/apibrowser.html')
-        c = RequestContext(request, {
-            'json': jsonresult
-        })
-        return HttpResponse(t.render(c))
-
-
     def dispatch(self, request, *args, **kwargs):
         result = super(APIView, self).dispatch(request, *args, **kwargs)
         if isinstance(result, HttpResponse):
@@ -59,6 +49,30 @@ class APIView(View):
         if callback:
             resp.write(');')
         return resp
+
+    def apibrowser_response(self, request, result):
+        """If format=apibrowser, return a prettified HTML reponse."""
+        if isinstance(result, RawJSONResponse):
+            result = json.loads(result.content)
+        jsonresult = json.dumps(result, indent=4)
+        t = loader.get_template('boundaries/apibrowser.html')
+        json_url = request.path
+        params = dict(request.GET.items())
+        params.pop('format')
+        if params:
+            json_url += '?' + urlencode(params)
+        ctx = {
+            'json': jsonresult,
+            'resource_name': self.model.__name__,
+            'is_list': isinstance(self, ModelListView),
+            'json_url': json_url
+        }
+        if ctx['is_list']:
+            ctx['title'] = self.model._meta.verbose_name_plural
+        else:
+            ctx['title'] = self.model._meta.verbose_name
+        c = RequestContext(request, ctx)
+        return HttpResponse(t.render(c))
 
 class ModelListView(APIView):
     """Base API class for a list of resources.
