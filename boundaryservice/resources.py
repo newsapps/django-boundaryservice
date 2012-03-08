@@ -12,10 +12,10 @@ from boundaryservice.models import BoundarySet, Boundary
 from boundaryservice.tastyhacks import SluggedResource
 from boundaryservice.throttle import AnonymousThrottle
 
-if getattr(settings, 'BOUNDARY_SERVICE_THROTTLE', False):
-    throttle_cls = AnonymousThrottle(**settings.BOUNDARY_SERVICE_THROTTLE)
-else:
-    throttle_cls = False
+try:
+    from cannonball.core.utils.cache.boundarycache import CannonballCache
+except ImportError:
+    from tastypie.cache import SimpleCache as CannonballCache
 
 
 class BoundarySetResource(SluggedResource):
@@ -33,7 +33,8 @@ class BoundarySetResource(SluggedResource):
         excludes = ['id', 'singular', 'kind_first']
         allowed_methods = ['get']
         authentication = NoOpApiKeyAuthentication()
-        #throttle = AnonymousThrottle(throttle_at=100)
+        throttle = AnonymousThrottle(throttle_at=100)
+        cache = CannonballCache()
 
 
 class BoundaryResource(SluggedResource):
@@ -50,7 +51,8 @@ class BoundaryResource(SluggedResource):
         excludes = ['id', 'display_name']
         allowed_methods = ['get']
         authentication = NoOpApiKeyAuthentication()
-        #throttle = AnonymousThrottle(throttle_at=100)
+        throttle = AnonymousThrottle(throttle_at=100)
+        cache = CannonballCache()
         filtering = {
             'external_id': ['exact', 'startswith'],
         }
