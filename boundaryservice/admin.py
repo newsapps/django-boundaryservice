@@ -4,8 +4,11 @@ from tastypie.models import ApiAccess, ApiKey
 from boundaryservice.models import BoundarySet, Boundary
 
 if ('django.contrib.gis' in settings.INSTALLED_APPS):
-    from django.contrib.gis.admin import OSMGeoAdmin
-    BoundaryModelAdminParent = OSMGeoAdmin
+    try:
+        from django.contrib.gis.admin import OSMGeoAdmin
+        BoundaryModelAdminParent = OSMGeoAdmin
+    except:
+        BoundaryModelAdminParent = admin.ModelAdmin
 else:
     BoundaryModelAdminParent = admin.ModelAdmin
 
