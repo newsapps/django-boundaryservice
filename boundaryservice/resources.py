@@ -33,7 +33,7 @@ class BoundarySetResource(SluggedResource):
         excludes = ['id', 'singular', 'kind_first']
         allowed_methods = ['get']
         authentication = NoOpApiKeyAuthentication()
-        throttle = throttle_cls
+        #throttle = AnonymousThrottle(throttle_at=100)
 
 
 class BoundaryResource(SluggedResource):
@@ -50,10 +50,11 @@ class BoundaryResource(SluggedResource):
         excludes = ['id', 'display_name']
         allowed_methods = ['get']
         authentication = NoOpApiKeyAuthentication()
-        throttle = throttle_cls
+        #throttle = AnonymousThrottle(throttle_at=100)
         filtering = {
-            "slug": ALL
+            'external_id': ['exact', 'startswith'],
         }
+
 
     def alter_list_data_to_serialize(self, request, data):
         """
@@ -68,6 +69,15 @@ class BoundaryResource(SluggedResource):
 
             if shape_type != 'full':
                 del obj.data['shape']
+
+        excludes = request.GET.get('excludes', "").strip().split(',')
+        if excludes:
+            for exclude in excludes:
+                for obj in data['objects']:
+                    try:
+                        del obj.data[exclude]
+                    except:
+                        pass
 
         return data
 
@@ -121,12 +131,5 @@ class BoundaryResource(SluggedResource):
             bounds = Boundary.objects.get(slug=slug)
 
             orm_filters.update({'shape__intersects': bounds.shape})
-
-        if 'bbox' in filters:
-            xmin, ymin, xmax, ymax = filters['bbox'].split(",")
-            bbox = (xmin, ymin, xmax, ymax)
-            bbox = Polygon.from_bbox(bbox)
-
-            orm_filters.update({'shape__intersects': bbox})
 
         return orm_filters
