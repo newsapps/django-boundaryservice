@@ -1,4 +1,4 @@
-import logging 
+import logging
 log = logging.getLogger('boundaries.api.load_shapefiles')
 from optparse import make_option
 import os, os.path
@@ -8,7 +8,8 @@ from zipfile import ZipFile
 from tempfile import mkdtemp
 
 from django.conf import settings
-from django.contrib.gis.gdal import CoordTransform, DataSource, OGRGeometry, OGRGeomType
+from django.contrib.gis.gdal import (CoordTransform, DataSource, OGRGeometry,
+                                     OGRGeomType)
 from django.core.management.base import BaseCommand
 from django.db import connections, DEFAULT_DB_ALIAS, transaction
 
@@ -22,15 +23,18 @@ class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
         make_option('-c', '--clear', action='store_true', dest='clear',
             help='Clear all jurisdictions in the DB.'),
-        make_option('-d', '--data-dir', action='store', dest='data_dir', 
+        make_option('-d', '--data-dir', action='store', dest='data_dir',
             default=DEFAULT_SHAPEFILES_DIR,
             help='Load shapefiles from this directory'),
         make_option('-e', '--except', action='store', dest='except',
-            default=False, help='Don\'t load these kinds of Areas, comma-delimited.'),
+                    default=False,
+                    help='Don\'t load these kinds of Areas, comma-delimited.'),
         make_option('-o', '--only', action='store', dest='only',
-            default=False, help='Only load these kinds of Areas, comma-delimited.'),
+                    default=False,
+                    help='Only load these kinds of Areas, comma-delimited.'),
         make_option('-u', '--database', action='store', dest='database',
-            default=DEFAULT_DB_ALIAS, help='Specify a database to load shape data into.'),
+                    default=DEFAULT_DB_ALIAS,
+                    help='Specify a database to load shape data into.'),
     )
 
     def get_version(self):
@@ -43,15 +47,18 @@ class Command(BaseCommand):
 
         if options['only']:
             only = options['only'].split(',')
-            # TODO: stripping whitespace here because optparse doesn't handle it correctly
-            sources = [s for s in SHAPEFILES if s.replace(' ', '') in only]
+            # TODO: stripping whitespace here because optparse doesn't handle 
+            # it correctly
+            sources = [s for s in SHAPEFILES
+                       if s.replace(' ', '').lower() in only.lower()]
         elif options['except']:
             exceptions = options['except'].upper().split(',')
             # See above
-            sources = [s for s in SHAPEFILES if s.replace(' ', '') not in exceptions]
+            sources = [s for s in SHAPEFILES
+                       if s.replace(' ', '').lower() not in exceptions.lower()]
         else:
             sources = [s for s in SHAPEFILES]
-        
+
         for kind, config in SHAPEFILES.items():
             if kind not in sources:
                 log.info('Skipping %s.' % kind)
@@ -67,7 +74,7 @@ class Command(BaseCommand):
 
         if options['clear']:
             bset = None
-            
+
             try:
                 bset = BoundarySet.objects.get(name=kind)
 
@@ -75,10 +82,11 @@ class Command(BaseCommand):
                     log.info('Clearing old %s.' % kind)
                     bset.boundaries.all().delete()
                     bset.delete()
-                    
+
                     log.info('Loading new %s.' % kind)
             except BoundarySet.DoesNotExist:
-                log.info("No existing boundary set of kind [%s] so nothing to delete" % kind)
+                log.info('No existing boundary set of kind [%s] so nothing to '
+                         'delete' % kind)
 
         path = os.path.join(options['data_dir'], config['file'])
         datasources = create_datasources(path)
@@ -102,17 +110,20 @@ class Command(BaseCommand):
             log.info("Loading %s from %s" % (kind, datasource.name))
             # Assume only a single-layer in shapefile
             if datasource.layer_count > 1:
-                log.warn('%s shapefile [%s] has multiple layers, using first.' % (datasource.name, kind))
+                log.warn('%s shapefile [%s] has multiple layers, using first.'
+                         % (datasource.name, kind))
             layer = datasource[0]
-            self.add_boundaries_for_layer(config, layer, bset, options['database'])
-
-        bset.count = Boundary.objects.filter(set=bset).count() # sync this with reality
+            self.add_boundaries_for_layer(config, layer, bset,
+                                          options['database'])
+        # sync this with reality
+        bset.count = Boundary.objects.filter(set=bset).count()
         bset.save()
         log.info('%s count: %i' % (kind, bset.count))
 
     def polygon_to_multipolygon(self, geom):
         """
-        Convert polygons to multipolygons so all features are homogenous in the database.
+        Convert polygons to multipolygons so all features are homogenous in the
+        database.
         """
         if geom.__class__.__name__ == 'Polygon':
             g = OGRGeometry(OGRGeomType('MultiPolygon'))
@@ -127,7 +138,8 @@ class Command(BaseCommand):
         # Get spatial reference system for the postgis geometry field
         geometry_field = Boundary._meta.get_field_by_name(GEOMETRY_COLUMN)[0]
         SpatialRefSys = connections[database].ops.spatial_ref_sys()
-        db_srs = SpatialRefSys.objects.using(database).get(srid=geometry_field.srid).srs
+        db_srs = SpatialRefSys.objects.using(database).get(
+            srid=geometry_field.srid).srs
 
         if 'srid' in config and config['srid']:
             layer_srs = SpatialRefSys.objects.get(srid=config['srid']).srs
@@ -149,7 +161,8 @@ class Command(BaseCommand):
             geometry = self.polygon_to_multipolygon(feature.geom)
             geometry.transform(transformer)
 
-            # Preserve topology prevents a shape from ever crossing over itself.
+            # Preserve topology prevents a shape from ever crossing over
+            # itself.
             simple_geometry = geometry.geos.simplify(simplification,
                                                      preserve_topology=True)
 
@@ -160,12 +173,15 @@ class Command(BaseCommand):
             metadata = {}
 
             for field in layer.fields:
-                
-                # Decode string fields using encoding specified in definitions config
+
+                # Decode string fields using encoding specified in definitions
+                # config
                 if config['encoding'] != '':
                     try:
-                        metadata[field] = feature.get(field).decode(config['encoding'])
-                    # Only strings will be decoded, get value in normal way if int etc.
+                        metadata[field] = feature.get(field).decode(
+                            config['encoding'])
+                    # Only strings will be decoded, get value in normal way if
+                    # int etc.
                     except AttributeError:
                         metadata[field] = feature.get(field)
                 else:
@@ -173,7 +189,7 @@ class Command(BaseCommand):
 
             external_id = config['ider'](feature)
             feature_name = config['namer'](feature)
-            
+
             # If encoding is specified, decode id and feature name
             if config['encoding'] != '':
                 external_id = external_id.decode(config['encoding'])
@@ -194,14 +210,14 @@ class Command(BaseCommand):
                 shape=geometry.wkt,
                 simple_shape=simple_geometry.wkt,
                 centroid=geometry.geos.centroid)
-        
+
 def create_datasources(path):
     if path.endswith('.zip'):
         path = temp_shapefile_from_zip(path)
 
     if path.endswith('.shp'):
         return [DataSource(path)]
-    
+
     # assume it's a directory...
     sources = []
     for fn in os.listdir(path):
@@ -211,11 +227,11 @@ def create_datasources(path):
         if fn.endswith('.shp'):
             sources.append(DataSource(fn))
     return sources
-    
+
 def temp_shapefile_from_zip(zip_path):
     """
     Given a path to a ZIP file, unpack it into a temp dir and return the path
-    to the shapefile that was in there.  Doesn't clean up after itself unless 
+    to the shapefile that was in there.  Doesn't clean up after itself unless
     there was an error.
 
     If you want to cleanup later, you can derive the temp dir from this path.
@@ -240,6 +256,6 @@ def temp_shapefile_from_zip(zip_path):
             os.unlink(os.path.join(tempdir, file))
         os.rmdir(tempdir)
         raise ValueError("No shapefile found in zip")
-    
+
     return shape_path
 
