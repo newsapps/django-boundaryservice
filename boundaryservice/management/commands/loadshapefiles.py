@@ -13,9 +13,10 @@ from django.contrib.gis.gdal import (CoordTransform, DataSource, OGRGeometry,
 from django.core.management.base import BaseCommand
 from django.db import connections, DEFAULT_DB_ALIAS, transaction
 
-from boundaryservice.models import BoundarySet, Boundary
+from boundaryservice.models import BoundarySet, Boundary, NAMERS, Shapefile
 
-DEFAULT_SHAPEFILES_DIR = getattr(settings, 'SHAPEFILES_DIR', 'data/shapefiles')
+settings.DEFAULT_SHAPEFILES_DIR = getattr(settings, 'SHAPEFILES_DIR',
+                                          'media/shapefiles')
 GEOMETRY_COLUMN = 'shape'
 
 class Command(BaseCommand):
@@ -24,7 +25,7 @@ class Command(BaseCommand):
         make_option('-c', '--clear', action='store_true', dest='clear',
             help='Clear all jurisdictions in the DB.'),
         make_option('-d', '--data-dir', action='store', dest='data_dir',
-            default=DEFAULT_SHAPEFILES_DIR,
+            default=settings.DEFAULT_SHAPEFILES_DIR,
             help='Load shapefiles from this directory'),
         make_option('-e', '--except', action='store', dest='except',
                     default=False,
@@ -43,7 +44,30 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         # Load configuration
         sys.path.append(options['data_dir'])
-        from definitions import SHAPEFILES
+        try:
+            from definitions import SHAPEFILES
+        except ImportError:
+            SHAPEFILES = {}
+
+        for sf in Shapefile.objects.all():
+            SHAPEFILES[sf.name] = {
+                'file': sf.file.name.replace(
+                    '%s/' % settings.SHAPEFILES_SUBDIR, '', 1),
+                'singular': sf.singular,
+                'kind_first': sf.kind_first,
+                'ider': NAMERS[sf.ider_namer]([n.strip() for n in
+                                               sf.ider_fields.split(',')]),
+                'namer': NAMERS[sf.name_namer]([n.strip() for n in
+                                                sf.name_fields.split(',')]),
+                'authority': sf.authority,
+                'domain': sf.domain,
+                'last_updated': sf.last_updated,
+                'href': sf.href,
+                'notes': sf.notes,
+                'encoding': sf.encoding,
+                'srid': sf.srid,
+                'simplification': sf.simplification
+            }
 
         if options['only']:
             only = options['only'].upper().split(',')
