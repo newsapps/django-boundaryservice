@@ -46,16 +46,16 @@ class Command(BaseCommand):
         from definitions import SHAPEFILES
 
         if options['only']:
-            only = options['only'].split(',')
+            only = options['only'].upper().split(',')
             # TODO: stripping whitespace here because optparse doesn't handle 
             # it correctly
             sources = [s for s in SHAPEFILES
-                       if s.replace(' ', '').lower() in only.lower()]
+                       if s.replace(' ', '').upper() in only]
         elif options['except']:
             exceptions = options['except'].upper().split(',')
             # See above
             sources = [s for s in SHAPEFILES
-                       if s.replace(' ', '').lower() not in exceptions.lower()]
+                       if s.replace(' ', '').upper() not in exceptions]
         else:
             sources = [s for s in SHAPEFILES]
 
