@@ -169,6 +169,97 @@ class Boundary(SluggedModel):
         return unicode(self.display_name)
 
 
+class PointSet(SluggedModel):
+    """
+    A set of related points, such as all bus stops or polling places.
+    """
+    name = models.CharField(max_length=64, unique=True,
+        help_text='Category of points, e.g. "Bus Stops".')
+    singular = models.CharField(max_length=64,
+        help_text='Name of a single point, e.g. "Bus Stop".')
+    kind_first = models.BooleanField(
+        help_text='If true, point display names will be "kind name" (e.g. Bus '
+        'Stop 43), otherwise "name kind" (e.g. 43rd Precinct Polling Place).')
+    authority = models.CharField(
+        max_length=256,
+        help_text='The entity responsible for this data\'s accuracy, e.g. '
+        '"City of Chicago".')
+    domain = models.CharField(
+        max_length=256,
+        help_text='The area that this PointSet covers, e.g. "Chicago" or '
+        '"Illinois".')
+    last_updated = models.DateField(
+        help_text='The last time this data was updated from its authority (but'
+        ' not necessarily the date it is current as of).')
+    href = models.URLField(blank=True,
+        help_text='The url this data was found at, if any.')
+    notes = models.TextField(
+        blank=True,
+        help_text='Notes about loading this data, including any '
+        'transformations that were applied to it.')
+    count = models.IntegerField(
+        help_text='Total number of features in this point set.')
+    metadata_fields = ListField(
+        separator='|', blank=True,
+        help_text='What, if any, metadata fields were loaded from the original'
+        ' dataset.')
+
+    class Meta:
+        ordering = ('name',)
+
+    def __unicode__(self):
+        """
+        Print plural names.
+        """
+        return unicode(self.name)
+
+
+class Point(SluggedModel):
+    """
+    A point object, such as a bus stop or polling place.
+    """
+    set = models.ForeignKey(
+        PointSet, related_name='points',
+        help_text='Category of points that this point belongs, e.g. '
+        '"Bus Stops".')
+    kind = models.CharField(
+        max_length=64,
+        help_text='A copy of PointSet\'s "singular" value for purposes of '
+        'slugging and inspection.')
+    external_id = models.CharField(
+        max_length=64,
+        help_text='The points\' unique id in the source dataset, or a '
+        'generated one.')
+    name = models.CharField(
+        max_length=192, db_index=True,
+        help_text='The name of this point, e.g. "Community Center".')
+    display_name = models.CharField(
+        max_length=256,
+        help_text='The name and kind of the field to be used for display '
+        'purposes.')
+    metadata = JSONField(
+        blank=True,
+        help_text='The complete contents of the attribute table for this '
+        'point from the source shapefile, structured as json.')
+    point = models.MultiPointField(
+        srid=4269,
+        null=True,
+        help_text='The point in EPSG:4269 projection.')
+
+    objects = models.GeoManager()
+
+    class Meta:
+        ordering = ('kind', 'display_name')
+        verbose_name_plural = 'Points'
+
+    def __unicode__(self):
+        """
+        Print names are formatted like "Bus Stop 42"
+        and will slug like "bus-stop-42".
+        """
+        return unicode(self.display_name)
+
+
 class Shapefile(models.Model):
     file = models.FileField(upload_to=settings.SHAPEFILES_SUBDIR)
     name = models.CharField(

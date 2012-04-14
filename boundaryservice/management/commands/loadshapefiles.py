@@ -14,11 +14,11 @@ from django.contrib.gis.gdal import (CoordTransform, DataSource, OGRGeometry,
 from django.core.management.base import BaseCommand
 from django.db import connections, DEFAULT_DB_ALIAS, transaction
 
-from boundaryservice.models import BoundarySet, Boundary, NAMERS, Shapefile
+from boundaryservice.models import (BoundarySet, Boundary, NAMERS, PointSet,
+                                    Point, Shapefile)
 
 settings.DEFAULT_SHAPEFILES_DIR = getattr(settings, 'SHAPEFILES_DIR',
                                           'media/shapefiles')
-GEOMETRY_COLUMN = 'shape'
 
 
 class Command(BaseCommand):
@@ -48,11 +48,12 @@ class Command(BaseCommand):
         sys.path.append(options['data_dir'])
         try:
             from definitions import SHAPEFILES
+            shapefiles = SHAPEFILES
         except ImportError:
-            SHAPEFILES = {}
+            shapefiles = {}
 
         for sf in Shapefile.objects.all():
-            SHAPEFILES[sf.name] = {
+            shapefiles[sf.name] = {
                 'file': sf.file.name.replace(
                     '%s/' % settings.SHAPEFILES_SUBDIR, '', 1),
                 'singular': sf.singular,
@@ -75,17 +76,17 @@ class Command(BaseCommand):
             only = options['only'].upper().split(',')
             # TODO: stripping whitespace here because optparse doesn't handle
             # it correctly
-            sources = [s for s in SHAPEFILES
+            sources = [s for s in shapefiles
                        if s.replace(' ', '').upper() in only]
         elif options['except']:
             exceptions = options['except'].upper().split(',')
             # See above
-            sources = [s for s in SHAPEFILES
+            sources = [s for s in shapefiles
                        if s.replace(' ', '').upper() not in exceptions]
         else:
-            sources = [s for s in SHAPEFILES]
+            sources = [s for s in shapefiles]
 
-        for kind, config in SHAPEFILES.items():
+        for kind, config in shapefiles.items():
             if kind not in sources:
                 log.info('Skipping %s.' % kind)
                 continue
@@ -99,38 +100,65 @@ class Command(BaseCommand):
         log.info('Processing %s.' % kind)
 
         if options['clear']:
-            bset = None
+            dset = None
 
             try:
-                bset = BoundarySet.objects.get(name=kind)
+                dset = BoundarySet.objects.get(name=kind)
 
-                if bset:
+                if dset:
                     log.info('Clearing old %s.' % kind)
-                    bset.boundaries.all().delete()
-                    bset.delete()
+                    dset.boundaries.all().delete()
+                    dset.delete()
 
                     log.info('Loading new %s.' % kind)
             except BoundarySet.DoesNotExist:
                 log.info('No existing boundary set of kind [%s] so nothing to '
                          'delete' % kind)
 
+            try:
+                dset = PointSet.objects.get(name=kind)
+
+                if dset:
+                    log.info('Clearing old %s.' % kind)
+                    dset.points.all().delete()
+                    dset.delete()
+
+                    log.info('Loading new %s.' % kind)
+            except PointSet.DoesNotExist:
+                log.info('No existing point set of kind [%s] so nothing to '
+                         'delete' % kind)
+
         path = os.path.join(options['data_dir'], config['file'])
         datasources = create_datasources(path)
 
         layer = datasources[0][0]
+        data_type = layer.geom_type.name
 
-        # Create BoundarySet
-        bset = BoundarySet.objects.create(
-            name=kind,
-            singular=config['singular'],
-            kind_first=config['kind_first'],
-            authority=config['authority'],
-            domain=config['domain'],
-            last_updated=config['last_updated'],
-            href=config['href'],
-            notes=config['notes'],
-            count=len(layer),
-            metadata_fields=layer.fields)
+        # create dataset
+        if data_type in ['Polygon', 'MultiPolygon']:
+            dset = BoundarySet.objects.create(
+                name=kind,
+                singular=config['singular'],
+                kind_first=config['kind_first'],
+                authority=config['authority'],
+                domain=config['domain'],
+                last_updated=config['last_updated'],
+                href=config['href'],
+                notes=config['notes'],
+                count=len(layer),
+                metadata_fields=layer.fields)
+        elif data_type in ['Point', 'MultiPoint']:
+            dset = PointSet.objects.create(
+                name=kind,
+                singular=config['singular'],
+                kind_first=config['kind_first'],
+                authority=config['authority'],
+                domain=config['domain'],
+                last_updated=config['last_updated'],
+                href=config['href'],
+                notes=config['notes'],
+                count=len(layer),
+                metadata_fields=layer.fields)
 
         for datasource in datasources:
             log.info("Loading %s from %s" % (kind, datasource.name))
@@ -139,12 +167,20 @@ class Command(BaseCommand):
                 log.warn('%s shapefile [%s] has multiple layers, using first.'
                          % (datasource.name, kind))
             layer = datasource[0]
-            self.add_boundaries_for_layer(config, layer, bset,
+
+            if data_type in ['Polygon', 'MultiPolygon']:
+                self.add_boundaries_for_layer(config, layer, dset,
+                                              options['database'])
+            elif data_type in ['Point', 'MultiPoint']:
+                self.add_points_for_layer(config, layer, dset,
                                           options['database'])
         # sync this with reality
-        bset.count = Boundary.objects.filter(set=bset).count()
-        bset.save()
-        log.info('%s count: %i' % (kind, bset.count))
+        if data_type in ['Polygon', 'MultiPolygon']:
+            dset.count = Boundary.objects.filter(set=dset).count()
+        elif data_type in ['Point', 'MultiPoint']:
+            dset.count = Point.objects.filter(set=dset).count()
+        dset.save()
+        log.info('%s count: %i' % (kind, dset.count))
 
     def polygon_to_multipolygon(self, geom):
         """
@@ -160,9 +196,9 @@ class Command(BaseCommand):
         else:
             raise ValueError('Geom is neither Polygon nor MultiPolygon.')
 
-    def add_boundaries_for_layer(self, config, layer, bset, database):
+    def add_boundaries_for_layer(self, config, layer, dset, database):
         # Get spatial reference system for the postgis geometry field
-        geometry_field = Boundary._meta.get_field_by_name(GEOMETRY_COLUMN)[0]
+        geometry_field = Boundary._meta.get_field_by_name('shape')[0]
         SpatialRefSys = connections[database].ops.spatial_ref_sys()
         db_srs = SpatialRefSys.objects.using(database).get(
             srid=geometry_field.srid).srs
@@ -227,7 +263,7 @@ class Command(BaseCommand):
                 display_name = '%s %s' % (feature_name, config['singular'])
 
             Boundary.objects.create(
-                set=bset,
+                set=dset,
                 kind=config['singular'],
                 external_id=external_id,
                 name=feature_name,
@@ -236,6 +272,80 @@ class Command(BaseCommand):
                 shape=geometry.wkt,
                 simple_shape=simple_geometry.wkt,
                 centroid=geometry.geos.centroid)
+
+    def point_to_multipoint(self, geom):
+        """
+        Convert points to multipoints so all features are homogenous in the
+        database.
+        """
+        if geom.__class__.__name__ == 'Point':
+            g = OGRGeometry(OGRGeomType('MultiPoint'))
+            g.add(geom)
+            return g
+        elif geom.__class__.__name__ == 'MultiPoint':
+            return geom
+        else:
+            raise ValueError('Geom is neither Point nor MultiPoint.')
+
+    def add_points_for_layer(self, config, layer, dset, database):
+        # Get spatial reference system for the postgis geometry field
+        geometry_field = Point._meta.get_field_by_name('point')[0]
+        SpatialRefSys = connections[database].ops.spatial_ref_sys()
+        db_srs = SpatialRefSys.objects.using(database).get(
+            srid=geometry_field.srid).srs
+
+        if 'srid' in config and config['srid']:
+            layer_srs = SpatialRefSys.objects.get(srid=config['srid']).srs
+        else:
+            layer_srs = layer.srs
+
+        # Create a convertor to turn the source data into
+        transformer = CoordTransform(layer_srs, db_srs)
+
+        for feature in layer:
+            # Transform the geometry to the correct SRS
+            geometry = self.point_to_multipoint(feature.geom)
+            geometry.transform(transformer)
+
+            # Extract metadata into a dictionary
+            metadata = {}
+
+            for field in layer.fields:
+
+                # Decode string fields using encoding specified in definitions
+                # config
+                if config['encoding'] != '':
+                    try:
+                        metadata[field] = feature.get(field).decode(
+                            config['encoding'])
+                    # Only strings will be decoded, get value in normal way if
+                    # int etc.
+                    except AttributeError:
+                        metadata[field] = feature.get(field)
+                else:
+                    metadata[field] = feature.get(field)
+
+            external_id = config['ider'](feature)
+            feature_name = config['namer'](feature)
+
+            # If encoding is specified, decode id and feature name
+            if config['encoding'] != '':
+                external_id = external_id.decode(config['encoding'])
+                feature_name = feature_name.decode(config['encoding'])
+
+            if config['kind_first']:
+                display_name = '%s %s' % (config['singular'], feature_name)
+            else:
+                display_name = '%s %s' % (feature_name, config['singular'])
+
+            Point.objects.create(
+                set=dset,
+                kind=config['singular'],
+                external_id=external_id,
+                name=feature_name,
+                display_name=display_name,
+                metadata=metadata,
+                point=geometry.wkt)
 
 
 def create_datasources(path):
