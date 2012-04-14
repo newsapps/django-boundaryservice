@@ -1,7 +1,3 @@
-from datetime import datetime
-import os
-import subprocess
-
 from django.contrib import admin
 from django.contrib.gis.admin import OSMGeoAdmin
 from tastypie.models import ApiAccess, ApiKey
@@ -41,4 +37,3 @@ class ShapefileAdmin(admin.ModelAdmin):
     list_filter = ('authority', 'domain')
 
 admin.site.register(Shapefile, ShapefileAdmin)
-

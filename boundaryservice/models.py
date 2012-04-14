@@ -17,6 +17,7 @@ NAMER_CHOICES.sort()
 settings.SHAPEFILES_SUBDIR = getattr(settings, 'SHAPEFILES_SUBDIR',
                                      'shapefiles')
 
+
 class SluggedModel(models.Model):
     """
     Extend this class to get a slug field and slug generated from a model
@@ -32,20 +33,20 @@ class SluggedModel(models.Model):
     def save(self, *args, **kwargs):
         self.unique_slug()
         if self.slug == '':
-            raise ValueError, "Slug may not be blank [%s]" % str(self)
-        super(SluggedModel,self).save(*args, **kwargs)
+            raise ValueError("Slug may not be blank [%s]" % str(self))
+        super(SluggedModel, self).save(*args, **kwargs)
 
     def unique_slug(self):
         """
         Customized unique_slug function
         """
-        if not getattr(self, "slug"): # if it's already got a slug, do nothing.
+        if not getattr(self, "slug"):  # if it's already got a slug, do nothing
             from django.template.defaultfilters import slugify
-            if hasattr(self,'get_slug_text') and callable(self.get_slug_text):
+            if hasattr(self, 'get_slug_text') and callable(self.get_slug_text):
                 slug_txt = self.get_slug_text()
-            elif hasattr(self,'__unicode__'):
+            elif hasattr(self, '__unicode__'):
                 slug_txt = unicode(self)
-            elif hasattr(self,'__str__'):
+            elif hasattr(self, '__str__'):
                 slug_txt = str(self)
             else:
                 return
@@ -60,13 +61,14 @@ class SluggedModel(models.Model):
                 counter = 2
                 slug = "%s-%i" % (slug, counter)
                 while slug in allSlugs:
-                    slug = re.sub(counterFinder,"-%i" % counter, slug)
+                    slug = re.sub(counterFinder, "-%i" % counter, slug)
                     counter += 1
 
-            setattr(self,"slug",slug)
+            setattr(self, "slug", slug)
 
     def fully_qualified_url(self):
         return get_site_url_root() + self.get_absolute_url()
+
 
 class BoundarySet(SluggedModel):
     """
@@ -111,6 +113,7 @@ class BoundarySet(SluggedModel):
         Print plural names.
         """
         return unicode(self.name)
+
 
 class Boundary(SluggedModel):
     """
@@ -164,6 +167,7 @@ class Boundary(SluggedModel):
         and will slug like "austin-community-area".
         """
         return unicode(self.display_name)
+
 
 class Shapefile(models.Model):
     file = models.FileField(upload_to=settings.SHAPEFILES_SUBDIR)

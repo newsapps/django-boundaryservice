@@ -1,7 +1,8 @@
 import logging
 log = logging.getLogger('boundaries.api.load_shapefiles')
 from optparse import make_option
-import os, os.path
+import os
+import os.path
 import sys
 
 from zipfile import ZipFile
@@ -18,6 +19,7 @@ from boundaryservice.models import BoundarySet, Boundary, NAMERS, Shapefile
 settings.DEFAULT_SHAPEFILES_DIR = getattr(settings, 'SHAPEFILES_DIR',
                                           'media/shapefiles')
 GEOMETRY_COLUMN = 'shape'
+
 
 class Command(BaseCommand):
     help = 'Import boundaries described by shapefiles.'
@@ -71,7 +73,7 @@ class Command(BaseCommand):
 
         if options['only']:
             only = options['only'].upper().split(',')
-            # TODO: stripping whitespace here because optparse doesn't handle 
+            # TODO: stripping whitespace here because optparse doesn't handle
             # it correctly
             sources = [s for s in SHAPEFILES
                        if s.replace(' ', '').upper() in only]
@@ -235,6 +237,7 @@ class Command(BaseCommand):
                 simple_shape=simple_geometry.wkt,
                 centroid=geometry.geos.centroid)
 
+
 def create_datasources(path):
     if path.endswith('.zip'):
         path = temp_shapefile_from_zip(path)
@@ -245,12 +248,13 @@ def create_datasources(path):
     # assume it's a directory...
     sources = []
     for fn in os.listdir(path):
-        fn = os.path.join(path,fn)
+        fn = os.path.join(path, fn)
         if fn.endswith('.zip'):
             fn = temp_shapefile_from_zip(fn)
         if fn.endswith('.shp'):
             sources.append(DataSource(fn))
     return sources
+
 
 def temp_shapefile_from_zip(zip_path):
     """
@@ -282,4 +286,3 @@ def temp_shapefile_from_zip(zip_path):
         raise ValueError("No shapefile found in zip")
 
     return shape_path
-

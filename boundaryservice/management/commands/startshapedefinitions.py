@@ -9,6 +9,7 @@ from django.core.management.base import BaseCommand, CommandError
 settings.DEFAULT_SHAPEFILES_DIR = getattr(settings, 'SHAPEFILES_DIR',
                                           'media/shapefiles')
 
+
 class Command(BaseCommand):
     """
     Create a new definitions.py file to configure shapefiles to be loaded into
@@ -26,7 +27,7 @@ class Command(BaseCommand):
 
     """
     help = 'Create a new definitions.py file to configure shapefiles to be '
-           'loaded into the database.'
+    'loaded into the database.'
     custom_options = (
         make_option(
             '-f', '--force', action='store_true', dest='force',
