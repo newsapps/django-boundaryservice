@@ -1,20 +1,31 @@
 =============================
-The Newsapps Boundary Service
+The Boundary Service
 =============================
 
 The Boundary Service is a ready-to-deploy system for aggregating regional boundary data (from shapefiles) and republishing via a RESTful JSON API. It is packaged as a pluggable Django application so that it can be easily integrated into any project.
 
-Open source examples of implementing the boundary service:
-
-* `hacktyler-boundaryservice <https://github.com/hacktyler/hacktyler-boundaryservice>`_: A complete example, including deployment.
-* `blank-boundaryservice <https://github.com/opennorth/blank-boundaryservice>`_: No extra cruft! A great starting point! (Maintained by `James McKinney <https://github.com/jpmckinney>`_.)
+* `News Apps Boundary Service <https://github.com/newsapps/django-boundaryservice>`_: The inspiration and parent
 
 Installation
 ============
 
+Install and setup PostgreSQL, PostGIS, postgres-postgis, postgres-dev packages.
+
+Next, create a PostgreSQL database, as the Boundary Service depends on PostGIS::
+    
+    $ DB=EXAMPLE_DB_NAME
+    $ createdb -h localhost $DB
+    $ createlang -h localhost plpgsql $DB
+
+To spatially-enable the database, you must load PostGIS definitions files. You can use `locate` (Linux) or `mdfind` (OS X) to find these files::
+
+    psql -h localhost -d $DB -f postgis.sql
+    psql -h localhost -d $DB -f spatial_ref_sys.sql
+
 Using pip::
 
-    $ pip install django-boundaryservice
+    $ pip install git+git://github.com/tulsawebdevs/django-boundaryservice.git
+    $ python manage.py syncdb
 
 Add the following to INSTALLED_APPS in your settings.py
 
@@ -32,7 +43,7 @@ Adding data
 
 To add data you will first need to add a shapefile and its related files (prj, dbf, etc.) to the data/shapefiles directory. Shapefiles and your definitions.py go into this folder. See the `hacktyler demo site <https://github.com/hacktyler/hacktyler-boundaryservice>`_ for a complete example. 
 
-If you havn't already, you can create your definitions file using a management command::
+If you are choosing not to upload shapefiles via the Shapefile model, you can create your definitions file using a management command::
 
     $ python manage.py startshapedefinitions
 
@@ -66,7 +77,7 @@ As a matter of best practice when shapefiles have been acquired from government 
 Credits
 =======
 
-The Boundary Service is a product of the `News Applications team <http://blog.apps.chicagotribune.com>`_ at the Chicago Tribune. Core development was done by `Christopher Groskopf <http://twitter.com/onyxfish>`_ and `Ryan Nagle <http://twitter.com/ryannagle>`_.
+The Boundary Service is a product of the `News Applications team <http://blog.apps.chicagotribune.com>`_ at the Chicago Tribune. Core development was done by `Christopher Groskopf <http://twitter.com/onyxfish>`_ and `Ryan Nagle <http://twitter.com/ryannagle>`_. Modified by `Jeremy Satterfield <https://plus.google.com/103708024549095350813/about>`_ as part of `OklahomaData.org <http://www.oklahomadata.org`_.
 
 License
 =======
