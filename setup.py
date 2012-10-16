@@ -14,7 +14,7 @@ setup(
     packages=[
         'boundaryservice',
         'boundaryservice.management',
-        'boundaryservice.management.commands'
+        'boundaryservice.management.commands',
         'boundaryservice.migrations',
     ],
     install_requires=[
