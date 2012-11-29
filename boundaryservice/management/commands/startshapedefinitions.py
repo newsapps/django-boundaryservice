@@ -36,7 +36,7 @@ class Command(BaseCommand):
     
     def handle(self, *args, **options):
         if not os.path.exists(options['data_dir']):
-            raise CommandError("The shapefiles directory does not exist. Create it or specify a different directory.")
+            raise CommandError("The shapefiles directory '%s' does not exist. Create it or specify a different directory." % options['data_dir'])
         def_path = os.path.join(options['data_dir'], "definitions.py")
         if os.path.exists(def_path) and not options.get("force"):
             raise CommandError("%s already exists." % def_path)
