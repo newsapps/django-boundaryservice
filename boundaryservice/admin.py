@@ -1,6 +1,13 @@
 from django.contrib import admin
+from tastypie.models import ApiAccess
 from django.contrib.gis.admin import OSMGeoAdmin
 from boundaryservice.models import BoundarySet, Boundary
+
+
+class ApiAccessAdmin(admin.ModelAdmin):
+    pass
+
+admin.site.register(ApiAccess, ApiAccessAdmin)
 
 
 class BoundarySetAdmin(admin.ModelAdmin):
