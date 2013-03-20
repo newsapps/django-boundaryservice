@@ -86,6 +86,8 @@ class SluggedResource(ModelResource):
         
         if isinstance(bundle_or_obj, Bundle):
             kwargs['slug'] = bundle_or_obj.obj.slug
+        elif bundle_or_obj is None:
+            kwargs['slug'] = None
         else:
             kwargs['slug'] = bundle_or_obj.slug
         
