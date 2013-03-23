@@ -1,0 +1,7 @@
+{
+    "type": "Feature",
+    "id": "{{ obj.external_id }}",
+    "properties": {{ obj.properties_json|safe }},
+    "geometry": {{ obj.geojson|safe }}
+}
+
