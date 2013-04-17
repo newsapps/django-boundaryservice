@@ -80,14 +80,18 @@ class SluggedResource(ModelResource):
         """
         Override URI generation to use slugs.
         """
+        # If there's no bundle_or_obj, something newer
+        # versions of tastypie will try, just go with
+        # the default method.
+        if not bundle_or_obj:
+            return super(ModelResource, self).get_resource_uri(bundle_or_obj)
+        
         kwargs = {
             'resource_name': self._meta.resource_name,
         }
         
         if isinstance(bundle_or_obj, Bundle):
             kwargs['slug'] = bundle_or_obj.obj.slug
-        elif bundle_or_obj is None:
-            kwargs['slug'] = None
         else:
             kwargs['slug'] = bundle_or_obj.slug
         
