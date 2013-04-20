@@ -3,31 +3,34 @@ import re
 from django.contrib.gis.measure import D
 from tastypie import fields
 from tastypie.serializers import Serializer
-from boundaryservice.serializers import GeoSerializer
+from boundaryservice.serializers import BoundaryGeoSerializer
+from boundaryservice.serializers import BoundarySetGeoSerializer
 
 from boundaryservice.authentication import NoOpApiKeyAuthentication
 from boundaryservice.models import BoundarySet, Boundary
 from boundaryservice.tastyhacks import SluggedResource
 from boundaryservice.throttle import AnonymousThrottle
 
+
 class BoundarySetResource(SluggedResource):
     boundaries = fields.ToManyField('boundaryservice.resources.BoundaryResource', 'boundaries')
 
     class Meta:
         queryset = BoundarySet.objects.all()
-        serializer = Serializer(formats=['json', 'jsonp'], content_types = {'json': 'application/json', 'jsonp': 'text/javascript'})
+        serializer = BoundarySetGeoSerializer()
         resource_name = 'boundary-set'
         excludes = ['id', 'singular', 'kind_first']
         allowed_methods = ['get']
         authentication = NoOpApiKeyAuthentication()
         #throttle = AnonymousThrottle(throttle_at=100) 
 
+
 class BoundaryResource(SluggedResource):
     set = fields.ForeignKey(BoundarySetResource, 'set')
 
     class Meta:
         queryset = Boundary.objects.all()
-        serializer = GeoSerializer()
+        serializer = BoundaryGeoSerializer()
         resource_name = 'boundary'
         excludes = ['id', 'display_name']
         allowed_methods = ['get']

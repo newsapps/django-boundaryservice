@@ -1,10 +1,11 @@
 import json
+from tastypie.bundle import Bundle
 from tastypie.serializers import Serializer
 from django.template.loader import render_to_string
 from django.core.serializers.json import DjangoJSONEncoder
 
 
-class GeoSerializer(Serializer):
+class BaseGeoSerializer(Serializer):
     """
     Adds some common geospatial outputs to the standard serializer.
     
@@ -38,7 +39,49 @@ class GeoSerializer(Serializer):
             return 'shape'
         else:
             return 'simple_shape'
+
+
+class BoundarySetGeoSerializer(BaseGeoSerializer):
+
+    def to_geojson(self, data, options=None):
+        """
+        Converts the bundle to a GeoJSON seralization.
+        """
+        # Hook the GeoJSON output to the object
+        simple_obj = self.to_simple(data, options)
+        shape_attr = self.sniff_shape_attr(data)
+        # Clean up the boundaries
+        boundary_list = []
+        for boundary in data.obj.boundaries.all():
+            boundary.geojson = getattr(boundary, shape_attr).geojson
+            boundary_list.append(boundary)
+        # Render the result using a template and pass it out
+        return render_to_string('object_list.geojson', {
+            'boundary_set': simple_obj,
+            'boundary_list': boundary_list,
+        })
     
+    def to_kml(self, data, options=None):
+        """
+        Converts the bundle to a KML serialization.
+        """
+        # Hook the KML output to the object
+        simple_obj = self.to_simple(data, options)
+        shape_attr = self.sniff_shape_attr(data)
+        # Clean up the boundaries
+        boundary_list = []
+        for boundary in data.obj.boundaries.all():
+            boundary.kml = getattr(boundary, shape_attr).kml
+            boundary_list.append(boundary)
+        # Render the result using a template and pass it out
+        return render_to_string('object_list.kml', {
+            'boundary_set': simple_obj,
+            'boundary_list': boundary_list,
+        })
+
+
+class BoundaryGeoSerializer(BaseGeoSerializer):
+
     def to_geojson(self, data, options=None):
         """
         Converts the bundle to a GeoJSON seralization.
@@ -48,14 +91,9 @@ class GeoSerializer(Serializer):
         shape_attr = self.sniff_shape_attr(data)
         simple_obj['geojson'] = getattr(data.obj, shape_attr).geojson
         # Get the properties serialized in GeoJSON style
-        properties = dict(
+        simple_obj['properties'] = dict(
             (k, v) for k, v in simple_obj.items()
                 if k not in ['shape', 'simple_shape', 'geojson']
-        )
-        simple_obj['properties_json'] = json.dumps(
-            properties,
-            cls=DjangoJSONEncoder,
-            sort_keys=True
         )
         # Render the result using a template and pass it out
         return render_to_string('object_detail.geojson', {

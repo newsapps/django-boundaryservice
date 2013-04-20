@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://earth.google.com/kml/2.2">
+<Document>
+{% for obj in boundary_list %}
+<Placemark>
+  <name>{{ obj.name }}</name>
+  {{ obj.kml|safe }}
+</Placemark>
+{% endfor %}
+</Document>
+</kml>
