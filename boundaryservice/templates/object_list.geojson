@@ -1,0 +1,19 @@
+{{% load boundaryservice_tags %}
+    "type": "FeatureCollection",
+    "features": [{% for obj in boundary_list %}
+        {
+            "type": "Feature",
+            "properties": {
+                "kind": "{{ obj.kind }}",
+                "external_id": "{{ obj.external_id }}",
+                "name": "{{ obj.name }}",
+                "slug": "{{ obj.slug }}",
+                "set": "/1.0/boundary-set/{{ boundary_set.slug }}/",
+                "centroid": {{ obj.centroid.geojson|safe }},
+                "metadata": {{ obj.metadata|jsonify|safe }},
+                "resource_uri": "/1.0/boundary/{{ obj.slug }}/"
+            },
+            "geometry": {{ obj.geojson|safe }}
+        }{% if not forloop.last %},{% endif %}
+    {% endfor %}]
+}
