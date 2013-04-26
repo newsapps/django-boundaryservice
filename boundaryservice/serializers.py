@@ -1,6 +1,7 @@
 import json
 from tastypie.bundle import Bundle
 from tastypie.serializers import Serializer
+from boundaryservice.shp import ShpSerializer
 from django.template.loader import render_to_string
 from django.core.serializers.json import DjangoJSONEncoder
 
@@ -22,12 +23,14 @@ class BaseGeoSerializer(Serializer):
         'jsonp',
         'kml',
         'geojson',
+        'shp',
     ]
     content_types = {
         'json': 'application/json',
         'jsonp': 'text/javascript',
         'kml': 'application/vnd.google-earth.kml+xml',
         'geojson': 'application/geo+json',
+        'shp': 'application/zip',
     }
     
     def get_shape_attr(self, shape_type):
@@ -44,6 +47,37 @@ class BoundarySetGeoSerializer(BaseGeoSerializer):
     """
     Applies the geospatial serializer to the BoundarySet model.
     """
+    def to_shp(self, data, options=None):
+        """
+        Converts the bundle to a SHP serialization.
+        """
+        simple_obj = self.to_simple(data, options)
+        if isinstance(data, dict):
+            # List data
+            shape_attr = self.get_shape_attr(data['shape_type'])
+            boundary_list = []
+            for bset in data['objects']:
+                for boundary in bset.obj.boundaries.all():
+                    boundary_list.append(boundary)
+            return ShpSerializer(
+                queryset=boundary_list,
+                geo_field=shape_attr,
+                excludes=['id', 'singular', 'kind_first', 'metadata'],
+            )()
+        elif isinstance(data, Bundle):
+            # Detail data
+            shape_attr = self.get_shape_attr(data.shape_type)
+            boundary_list = []
+            for boundary in data.obj.boundaries.all():
+                boundary_list.append(boundary)
+            return ShpSerializer(
+                queryset=boundary_list,
+                geo_field=shape_attr,
+                readme=simple_obj['notes'],
+                file_name=boundary_list[0].kind.lower(),
+                excludes=['id', 'singular', 'kind_first', 'metadata'],
+            )()
+    
     def to_geojson(self, data, options=None):
         """
         Converts the bundle to a GeoJSON seralization.
@@ -128,6 +162,36 @@ class BoundaryGeoSerializer(BaseGeoSerializer):
     """
     Applies the geospatial serializer to the Boundary model.
     """
+    def to_shp(self, data, options=None):
+        """
+        Converts the bundle to a SHP serialization.
+        """
+        # Hook the KML output to the object
+        simple_obj = self.to_simple(data, options)
+        # Figure out if it's list data or detail data
+        if isinstance(data, dict):
+            # List data
+            shape_attr = self.get_shape_attr(data['shape_type'])
+            boundary_list = []
+            for bundle in data['objects']:
+                boundary_list.append(bundle.obj)
+            return ShpSerializer(
+                queryset=boundary_list,
+                geo_field=shape_attr,
+                excludes=['id', 'singular', 'kind_first', 'metadata'],
+            )()
+        
+        elif isinstance(data, Bundle):
+            # Detail data
+            shape_attr = self.get_shape_attr(data.shape_type)
+            simple_obj['kml'] = getattr(data.obj, shape_attr).kml
+            return ShpSerializer(
+                queryset=[data.obj],
+                geo_field=shape_attr,
+                file_name=data.obj.kind.lower(),
+                excludes=['id', 'singular', 'kind_first', 'metadata'],
+            )()
+
     def to_geojson(self, data, options=None):
         """
         Converts the bundle to a GeoJSON seralization.
