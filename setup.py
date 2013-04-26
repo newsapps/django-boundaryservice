@@ -18,5 +18,6 @@ setup(
     ],
     install_requires = [
         'django-tastypie==0.9.9'
+        'GDAL==1.9.1'
     ]
 )
