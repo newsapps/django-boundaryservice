@@ -27,6 +27,10 @@ Add the following to your urls.py::
 
     (r'', include('boundaryservice.urls')),
 
+Make the data directory:
+
+    $ mkdir -p data/shapefiles
+
 Adding data
 ===========
 
