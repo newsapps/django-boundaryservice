@@ -1,9 +1,8 @@
 import re
-
 from django.contrib.gis.db import models
-
 from boundaryservice.fields import ListField, JSONField
 from boundaryservice.utils import get_site_url_root
+
 
 class SluggedModel(models.Model):
     """
@@ -36,23 +35,25 @@ class SluggedModel(models.Model):
                 slug_txt = str(self)
             else:
                 return
-            slug = slugify(slug_txt)
-
-            itemModel = self.__class__
-            # the following gets all existing slug values
-            allSlugs = set(sl.values()[0] for sl in itemModel.objects.values("slug"))
-            if slug in allSlugs:
-                counterFinder = re.compile(r'-\d+$')
-                counter = 2
-                slug = "%s-%i" % (slug, counter)
-                while slug in allSlugs:
-                    slug = re.sub(counterFinder,"-%i" % counter, slug)
-                    counter += 1
-
-            setattr(self,"slug",slug)
-
-    def fully_qualified_url(self):        
+            original_slug = slugify(slug_txt)
+            queryset = self.__class__._default_manager.all()
+            if not queryset.filter(slug=original_slug).count():
+                setattr(self, "slug", original_slug)
+            else:
+                slug = ''
+                next = 2
+                while not slug or queryset.filter(slug=slug).count():
+                    slug = original_slug
+                    end = '-%s' % next
+                    if len(slug) + len(end) > 256:
+                        slug = slug[:200-len(end)]
+                    slug = '%s%s' % (slug, end)
+                    next += 1
+                setattr(self, "slug", slug)
+    
+    def fully_qualified_url(self):
         return get_site_url_root() + self.get_absolute_url()
+
 
 class BoundarySet(SluggedModel):
     """
@@ -88,6 +89,7 @@ class BoundarySet(SluggedModel):
         """
         return unicode(self.name)
 
+
 class Boundary(SluggedModel):
     """
     A boundary object, such as a Ward or Neighborhood.
@@ -116,6 +118,7 @@ class Boundary(SluggedModel):
 
     class Meta:
         ordering = ('kind', 'display_name')
+        verbose_name_plural = 'boundaries'
 
     def __unicode__(self):
         """

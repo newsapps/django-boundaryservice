@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://earth.google.com/kml/2.2">
+<Document>
+{% for obj in boundary_list %}
+<Placemark>
+    <name>{{ obj.name }}</name>
+    <ExtendedData>
+      <Data name="kind">
+        <value>{{ obj.kind }}</value>
+      </Data>
+      <Data name="external_id">
+        <value>{{ obj.external_id }}</value>
+      </Data>
+      <Data name="slug">
+        <value>{{ obj.slug }}</value>
+      </Data>
+      <Data name="set">
+        <value>{{ obj.set_uri }}</value>
+      </Data>
+      <Data name="resource_uri">
+        <value>{{ obj.resource_uri }}</value>
+      </Data>{% for key, value in obj.metadata.items %}
+      <Data name="{{ key }}">
+         <value>{{ value }}</value>
+      </Data>{% endfor %}
+    </ExtendedData>
+    {{ obj.kml|safe }}
+</Placemark>
+{% endfor %}
+</Document>
+</kml>
