@@ -76,10 +76,16 @@ class SluggedResource(ModelResource):
             url(r"^(?P<resource_name>%s)/(?P<slug>[\w\d_.-]+)/$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
             ]
 
-    def get_resource_uri(self, bundle_or_obj):
+    def get_resource_uri(self, bundle_or_obj=None):
         """
         Override URI generation to use slugs.
         """
+        # If there's no bundle_or_obj, something newer
+        # versions of tastypie will try, just go with
+        # the default method.
+        if not bundle_or_obj:
+            return super(ModelResource, self).get_resource_uri(bundle_or_obj)
+        
         kwargs = {
             'resource_name': self._meta.resource_name,
         }
