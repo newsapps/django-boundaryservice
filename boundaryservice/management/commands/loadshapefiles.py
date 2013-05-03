@@ -17,6 +17,7 @@ from boundaryservice.models import BoundarySet, Boundary
 DEFAULT_SHAPEFILES_DIR = getattr(settings, 'SHAPEFILES_DIR', 'data/shapefiles')
 GEOMETRY_COLUMN = 'shape'
 
+
 class Command(BaseCommand):
     help = 'Import boundaries described by shapefiles.'
     option_list = BaseCommand.option_list + (
@@ -86,6 +87,7 @@ class Command(BaseCommand):
         layer = datasources[0][0]
 
         # Create BoundarySet
+        log.info("Creating BoundarySet: %s" % kind)
         bset = BoundarySet.objects.create(
             name=kind,
             singular=config['singular'],
@@ -95,9 +97,11 @@ class Command(BaseCommand):
             last_updated=config['last_updated'],
             href=config['href'],
             notes=config['notes'],
-            count=len(layer),
-            metadata_fields=layer.fields)
-
+            count=0,
+            metadata_fields=layer.fields
+        )
+        log.info("Created with slug %s and id %s" % (bset.slug, bset.id))
+        
         for datasource in datasources:
             log.info("Loading %s from %s" % (kind, datasource.name))
             # Assume only a single-layer in shapefile
@@ -145,6 +149,7 @@ class Command(BaseCommand):
         transformer = CoordTransform(layer_srs, db_srs)
 
         for feature in layer:
+            log.debug("Processing boundary %s" % feature)
             # Transform the geometry to the correct SRS
             geometry = self.polygon_to_multipolygon(feature.geom)
             geometry.transform(transformer)
@@ -194,7 +199,7 @@ class Command(BaseCommand):
                 shape=geometry.wkt,
                 simple_shape=simple_geometry.wkt,
                 centroid=geometry.geos.centroid)
-        
+
 def create_datasources(path):
     if path.endswith('.zip'):
         path = temp_shapefile_from_zip(path)
@@ -211,7 +216,7 @@ def create_datasources(path):
         if fn.endswith('.shp'):
             sources.append(DataSource(fn))
     return sources
-    
+
 def temp_shapefile_from_zip(zip_path):
     """
     Given a path to a ZIP file, unpack it into a temp dir and return the path
@@ -220,6 +225,7 @@ def temp_shapefile_from_zip(zip_path):
 
     If you want to cleanup later, you can derive the temp dir from this path.
     """
+    log.info("Creating temporary SHP file from %s" % zip_path)
     zf = ZipFile(zip_path)
     tempdir = mkdtemp()
     shape_path = None
@@ -242,4 +248,3 @@ def temp_shapefile_from_zip(zip_path):
         raise ValueError("No shapefile found in zip")
     
     return shape_path
-
