@@ -1,5 +1,6 @@
 import re
 
+from django.conf import settings
 from django.contrib.gis.measure import D
 from tastypie import fields
 from tastypie.serializers import Serializer
@@ -8,6 +9,12 @@ from boundaryservice.authentication import NoOpApiKeyAuthentication
 from boundaryservice.models import BoundarySet, Boundary
 from boundaryservice.tastyhacks import SluggedResource
 from boundaryservice.throttle import AnonymousThrottle
+
+if getattr(settings, 'BOUNDARY_SERVICE_THROTTLE', False):
+    throttle_cls = AnonymousThrottle(**settings.BOUNDARY_SERVICE_THROTTLE)
+else:
+    throttle_cls = False
+
 
 class BoundarySetResource(SluggedResource):
     boundaries = fields.ToManyField('boundaryservice.resources.BoundaryResource', 'boundaries')
@@ -19,7 +26,7 @@ class BoundarySetResource(SluggedResource):
         excludes = ['id', 'singular', 'kind_first']
         allowed_methods = ['get']
         authentication = NoOpApiKeyAuthentication()
-        #throttle = AnonymousThrottle(throttle_at=100) 
+        throttle = throttle_cls
 
 class BoundaryResource(SluggedResource):
     set = fields.ForeignKey(BoundarySetResource, 'set')
@@ -31,7 +38,7 @@ class BoundaryResource(SluggedResource):
         excludes = ['id', 'display_name']
         allowed_methods = ['get']
         authentication = NoOpApiKeyAuthentication()
-        #throttle = AnonymousThrottle(throttle_at=100) 
+        throttle = throttle_cls
 
     def alter_list_data_to_serialize(self, request, data):
         """
@@ -96,6 +103,6 @@ class BoundaryResource(SluggedResource):
             slug = filters['intersects']
             bounds = Boundary.objects.get(slug=slug)
 
-            orm_filters.update({'shape__intersects': bounds.shape})            
+            orm_filters.update({'shape__intersects': bounds.shape})
 
         return orm_filters
