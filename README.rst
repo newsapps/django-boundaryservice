@@ -81,7 +81,7 @@ As a matter of best practice when shapefiles have been acquired from government 
 Throttling
 ==========
 
-You can enable api throttling for anonymous access to the boundaryservice API. Throttling is based on the IP that the request is coming from. Add the following to your settings.py
+You can enable api throttling for anonymous access to the boundaryservice API. Throttling is based on the IP that the request is coming from. Add the following to your settings.py::
 
     ...
     BOUNDARY_SERVICE_THROTTLE = {
@@ -95,7 +95,7 @@ You can enable api throttling for anonymous access to the boundaryservice API. T
 Credits
 =======
 
-The Boundary Service is a product of the `News Applications team <http://blog.apps.chicagotribune.com>`_ at the Chicago Tribune. Core development was done by `Christopher Groskopf <http://twitter.com/onyxfish>`_ and `Ryan Nagle <http://twitter.com/ryannagle>`_. Modified by `Jeremy Satterfield <https://plus.google.com/103708024549095350813/about>`_ as part of `OklahomaData.org <http://www.oklahomadata.org`_.
+The Boundary Service is a product of the `News Applications team <http://blog.apps.chicagotribune.com>`_ at the Chicago Tribune. Core development was done by `Christopher Groskopf <http://twitter.com/onyxfish>`_ and `Ryan Nagle <http://twitter.com/ryannagle>`_. Modified by `Jeremy Satterfield <https://plus.google.com/103708024549095350813/about>`_ as part of `OklahomaData.org <http://www.oklahomadata.org>`_.
 
 License
 =======
