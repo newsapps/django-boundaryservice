@@ -67,6 +67,20 @@ Of particular note amongst the defintion fields are the 'ider' and 'namer' prope
 
 As a matter of best practice when shapefiles have been acquired from government entities and other primary sources it is advisable not to modify them before loading them into the Boundary Service. (Thus why the Chicago neighborhoods shapefile is misspelled "Neighboorhoods".) If it is necessary to modify the data this should be noted in the 'notes' field of the shapefile's definitions.py entry.
 
+Throttling
+==========
+
+You can enable api throttling for anonymous access to the boundaryservice API. Throttling is based on the IP that the request is coming from. Add the following to your settings.py
+
+    ...
+    BOUNDARY_SERVICE_THROTTLE = {
+        "timeframe": 60,  # timeframe to consider for throttling. In seconds
+        "throttle_at": 100,  # number of requests in the timeframe before blocking
+        "expiration": 3600  # How long to cache records of client requests
+    }
+    ...
+
+
 Credits
 =======
 
