@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.gis.measure import D
 from tastypie import fields
 from tastypie.serializers import Serializer
+from django.contrib.gis.geos import Polygon
 
 from boundaryservice.authentication import NoOpApiKeyAuthentication
 from boundaryservice.models import BoundarySet, Boundary
@@ -17,23 +18,33 @@ else:
 
 
 class BoundarySetResource(SluggedResource):
-    boundaries = fields.ToManyField('boundaryservice.resources.BoundaryResource', 'boundaries')
+    boundaries = fields.ToManyField(
+        'boundaryservice.resources.BoundaryResource', 'boundaries')
 
     class Meta:
         queryset = BoundarySet.objects.all()
-        serializer = Serializer(formats=['json', 'jsonp'], content_types = {'json': 'application/json', 'jsonp': 'text/javascript'})
+        serializer = Serializer(
+            formats=['json', 'jsonp'],
+            content_types={
+                'json': 'application/json',
+                'jsonp': 'text/javascript'})
         resource_name = 'boundary-set'
         excludes = ['id', 'singular', 'kind_first']
         allowed_methods = ['get']
         authentication = NoOpApiKeyAuthentication()
         throttle = throttle_cls
 
+
 class BoundaryResource(SluggedResource):
     set = fields.ForeignKey(BoundarySetResource, 'set')
 
     class Meta:
         queryset = Boundary.objects.all()
-        serializer = Serializer(formats=['json', 'jsonp'], content_types = {'json': 'application/json', 'jsonp': 'text/javascript'})
+        serializer = Serializer(
+            formats=['json', 'jsonp'],
+            content_types={
+                'json': 'application/json',
+                'jsonp': 'text/javascript'})
         resource_name = 'boundary'
         excludes = ['id', 'display_name']
         allowed_methods = ['get']
@@ -42,7 +53,8 @@ class BoundaryResource(SluggedResource):
 
     def alter_list_data_to_serialize(self, request, data):
         """
-        Allow the selection of simple, full or no shapes using a query parameter.
+        Allow the selection of simple, full or no shapes
+        using a query parameter.
         """
         shape_type = request.GET.get('shape_type', 'simple')
 
@@ -57,7 +69,8 @@ class BoundaryResource(SluggedResource):
 
     def alter_detail_data_to_serialize(self, request, bundle):
         """
-        Allow the selection of simple, full or no shapes using a query parameter.
+        Allow the selection of simple, full or no shapes
+        using a query parameter.
         """
         shape_type = request.GET.get('shape_type', 'simple')
 
@@ -104,5 +117,12 @@ class BoundaryResource(SluggedResource):
             bounds = Boundary.objects.get(slug=slug)
 
             orm_filters.update({'shape__intersects': bounds.shape})
+
+        if 'bbox' in filters:
+            xmin, ymin, xmax, ymax = filters['bbox'].split(",")
+            bbox = (xmin, ymin, xmax, ymax)
+            bbox = Polygon.from_bbox(bbox)
+
+            orm_filters.update({'shape__intersects': bbox})
 
         return orm_filters
