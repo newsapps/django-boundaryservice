@@ -1,6 +1,7 @@
+import json
+
 from django.conf.urls.defaults import url
 from django.contrib.gis.db.models import GeometryField
-from django.utils import simplejson
 
 from tastypie.bundle import Bundle
 from tastypie.fields import ApiField, CharField
@@ -60,7 +61,7 @@ class GeometryApiField(ApiField):
 
         # Get ready-made geojson serialization and then convert it _back_ to a Python object
         # so that Tastypie can serialize it as part of the bundle
-        return simplejson.loads(value.geojson)
+        return json.loads(value.geojson)
 
 
 class SluggedResource(ModelResource):
