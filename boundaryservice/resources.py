@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.gis.measure import D
 from tastypie import fields
 from tastypie.serializers import Serializer
+from tastypie.constants import ALL, ALL_WITH_RELATIONS
 from django.contrib.gis.geos import Polygon
 
 from boundaryservice.authentication import NoOpApiKeyAuthentication
@@ -50,6 +51,9 @@ class BoundaryResource(SluggedResource):
         allowed_methods = ['get']
         authentication = NoOpApiKeyAuthentication()
         throttle = throttle_cls
+        filtering = {
+            "slug": ALL
+        }
 
     def alter_list_data_to_serialize(self, request, data):
         """
