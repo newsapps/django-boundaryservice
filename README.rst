@@ -24,7 +24,7 @@ To spatially-enable the database, you must load PostGIS definitions files. You c
 
 Using pip::
 
-    $ pip install git+git://github.com/tulsawebdevs/django-boundaryservice.git
+    $ pip install git+git://github.com/newsapps/django-boundaryservice.git
     $ python manage.py syncdb
 
 Add the following to INSTALLED_APPS in your settings.py
