@@ -1,9 +1,10 @@
 from django.conf import settings
 
+
 def get_site_url_root():
     domain = getattr(settings, 'MY_SITE_DOMAIN', 'localhost')
     protocol = getattr(settings, 'MY_SITE_PROTOCOL', 'http')
-    port     = getattr(settings, 'MY_SITE_PORT', '')
+    port = getattr(settings, 'MY_SITE_PORT', '')
     url = '%s://%s' % (protocol, domain)
     if port:
         url += ':%s' % port
@@ -13,13 +14,14 @@ def get_site_url_root():
 # Utility methods for transforming shapefile columns into useful representations
 #
 
+
 class static_namer():
     """
     Name features with a single, static name.
     """
     def __init__(self, name):
         self.name = name
-    
+
     def __call__(self, feature):
         return self.name
 
@@ -31,7 +33,7 @@ class index_namer():
     def __init__(self, prefix):
         self.prefix = prefix
         self.i = 0
-    
+
     def __call__(self, feature):
         out = '%s%i' % (self.prefix, self.i)
         self.i += 1
@@ -40,7 +42,7 @@ class index_namer():
 
 class simple_namer():
     """
-    Name features with a joined combination of attributes, optionally passing 
+    Name features with a joined combination of attributes, optionally passing
     the result through a normalizing function.
     """
     def __init__(self, attribute_names, seperator=' ', normalizer=None):
@@ -49,15 +51,26 @@ class simple_namer():
         self.normalizer = normalizer
 
     def __call__(self, feature):
-        attribute_values = map(str, map(feature.get, self.attribute_names))
+        attribute_values = map(unicode, map(feature.get, self.attribute_names))
         name = self.seperator.join(attribute_values).strip()
-        
+
         if self.normalizer:
             normed = self.normalizer(name)
             if not normed:
                 raise ValueError('Failed to normalize \"%s\".' % name)
             else:
                 name = normed
-        
+
         return name
 
+
+class even_simpler_namer():
+    """
+    Very simple naming function using one field.
+    """
+    def __init__(self, attribute_name):
+        self.attribute_name = attribute_name
+
+    def __call__(self, feature):
+        name = feature.get(self.attribute_name)
+        return name
