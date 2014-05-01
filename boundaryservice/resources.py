@@ -2,6 +2,7 @@ import re
 
 from django.conf import settings
 from django.contrib.gis.measure import D
+from django.http import HttpResponse
 from tastypie import fields
 from tastypie.serializers import Serializer
 from tastypie.constants import ALL, ALL_WITH_RELATIONS
@@ -130,3 +131,26 @@ class BoundaryResource(SluggedResource):
             orm_filters.update({'shape__intersects': bbox})
 
         return orm_filters
+
+    def build_content_type(self, format, encoding='utf-8'):
+        """
+        Appends character encoding to the provided format if not already present.
+
+        Grabbed from http://stackoverflow.com/questions/17280513/tastypie-json-header-to-use-utf-8
+        """
+        if 'charset' in format:
+            return format
+
+        return "%s; charset=%s" % (format, encoding)
+
+    def create_response(self, request, data, response_class=HttpResponse, **response_kwargs):
+        """
+        Extracts the common "which-format/serialize/return-response" cycle.
+
+        Mostly a useful shortcut/hook.
+
+        Grabbed from http://stackoverflow.com/questions/17280513/tastypie-json-header-to-use-utf-8
+        """
+        desired_format = self.determine_format(request)
+        serialized = self.serialize(request, data, desired_format)
+        return response_class(content=serialized, content_type=self.build_content_type(desired_format), **response_kwargs)
