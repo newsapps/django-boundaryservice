@@ -1,7 +1,7 @@
 import logging
 log = logging.getLogger('boundaries.api.load_shapefiles')
 from optparse import make_option
-import os, os.path
+import os
 import sys
 
 from zipfile import ZipFile
@@ -23,10 +23,10 @@ class Command(BaseCommand):
     help = 'Import boundaries described by shapefiles.'
     option_list = BaseCommand.option_list + (
         make_option('-c', '--clear', action='store_true', dest='clear',
-            help='Clear all jurisdictions in the DB.'),
+                    help='Clear all jurisdictions in the DB.'),
         make_option('-d', '--data-dir', action='store', dest='data_dir',
-            default=DEFAULT_SHAPEFILES_DIR,
-            help='Load shapefiles from this directory'),
+                    default=DEFAULT_SHAPEFILES_DIR,
+                    help='Load shapefiles from this directory'),
         make_option('-e', '--except', action='store', dest='except',
                     default=False,
                     help='Don\'t load these kinds of Areas, comma-delimited.'),
@@ -48,7 +48,7 @@ class Command(BaseCommand):
 
         if options['only']:
             only = options['only'].upper().split(',')
-            # TODO: stripping whitespace here because optparse doesn't handle 
+            # TODO: stripping whitespace here because optparse doesn't handle
             # it correctly
             sources = [s for s in SHAPEFILES
                        if s.replace(' ', '').upper() in only]
@@ -90,7 +90,7 @@ class Command(BaseCommand):
                          'delete' % kind)
 
         path = os.path.join(options['data_dir'], config['file'])
-        datasources = create_datasources(path)
+        datasources = create_datasources(path, config['encoding'])
 
         layer = datasources[0][0]
 
@@ -109,7 +109,7 @@ class Command(BaseCommand):
             metadata_fields=layer.fields
         )
         log.info("Created with slug %s and id %s" % (bset.slug, bset.id))
-        
+
         for datasource in datasources:
             log.info("Loading %s from %s" % (kind, datasource.name))
             # Assume only a single-layer in shapefile
@@ -178,27 +178,11 @@ class Command(BaseCommand):
             metadata = {}
 
             for field in layer.fields:
-
-                # Decode string fields using encoding specified in definitions
-                # config
-                if config['encoding'] != '':
-                    try:
-                        metadata[field] = feature.get(field).decode(
-                            config['encoding'])
-                    # Only strings will be decoded, get value in normal way if
-                    # int etc.
-                    except AttributeError:
-                        metadata[field] = feature.get(field)
-                else:
-                    metadata[field] = feature.get(field)
+                # Decoding handled by geodjango DataSource encoding
+                metadata[field] = feature.get(field)
 
             external_id = config['ider'](feature)
             feature_name = config['namer'](feature)
-
-            # If encoding is specified, decode id and feature name
-            if config['encoding'] != '':
-                external_id = external_id.decode(config['encoding'])
-                feature_name = feature_name.decode(config['encoding'])
 
             if config['kind_first']:
                 display_name = '%s %s' % (config['singular'], feature_name)
@@ -216,22 +200,30 @@ class Command(BaseCommand):
                 simple_shape=simple_geometry.wkt,
                 centroid=geometry.geos.centroid)
 
-def create_datasources(path):
+
+def create_datasources(path, encoding=None):  # Optional to specify encoding for non-ASCII data sets
     if path.endswith('.zip'):
         path = temp_shapefile_from_zip(path)
 
     if path.endswith('.shp'):
-        return [DataSource(path)]
+        if encoding and encoding != '':
+            return [DataSource(path, False, False, encoding)]
+        else:
+            return [DataSource(path)]
 
     # assume it's a directory...
     sources = []
     for fn in os.listdir(path):
-        fn = os.path.join(path,fn)
+        fn = os.path.join(path, fn)
         if fn.endswith('.zip'):
             fn = temp_shapefile_from_zip(fn)
         if fn.endswith('.shp'):
-            sources.append(DataSource(fn))
+            if encoding and encoding != '':
+                sources.append(DataSource(fn, False, False, encoding))
+            else:
+                sources.append(DataSource(fn))
     return sources
+
 
 def temp_shapefile_from_zip(zip_path):
     """
