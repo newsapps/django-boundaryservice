@@ -17,12 +17,19 @@ Next, create a PostgreSQL database, as the Boundary Service depends on PostGIS::
     $ createdb -h localhost $DB
     $ createlang -h localhost plpgsql $DB
 
-To spatially-enable the database, you must load PostGIS definitions files. You can use `locate` (Linux) or `mdfind` (OS X) to find these files::
+To spatially-enable the database, 
+
+if you are using PostgreSQL 9.1+ and have compiled and installed the extensions/ postgis modules, you can spatial-enable the database with one command::
+
+    psql -h localhost -d $DB -c "CREATE EXTENSION postgis;" 
+
+but if you are using PostgreSQL older than 9.1, you must load PostGIS definitions files. You can use `locate` (Linux) or `mdfind` (OS X) to find these files, then run::
 
     psql -h localhost -d $DB -f postgis.sql
     psql -h localhost -d $DB -f spatial_ref_sys.sql
 
-Using pip::
+
+Next, using pip::
 
     $ pip install git+git://github.com/tulsawebdevs/django-boundaryservice.git
     $ python manage.py syncdb
