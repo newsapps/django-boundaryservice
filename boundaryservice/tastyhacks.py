@@ -1,6 +1,6 @@
 import json
 
-from django.conf.urls.defaults import url
+from django.conf.urls import url
 from django.contrib.gis.db.models import GeometryField
 
 from tastypie.bundle import Bundle
