@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import patterns, include 
+from django.conf.urls import patterns, include 
 from tastypie.api import Api
 
 from boundaryservice.resources import BoundarySetResource, BoundaryResource
