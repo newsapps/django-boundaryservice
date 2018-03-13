@@ -49,7 +49,7 @@ class simple_namer():
         self.normalizer = normalizer
 
     def __call__(self, feature):
-        attribute_values = map(str, map(feature.get, self.attribute_names))
+        attribute_values = list(map(str, list(map(feature.get, self.attribute_names))))
         name = self.seperator.join(attribute_values).strip()
         
         if self.normalizer:

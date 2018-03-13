@@ -24,7 +24,7 @@ class SluggedModel(models.Model):
 
     def save(self, *args, **kwargs):
         self.unique_slug()
-        if self.slug == '': raise ValueError, "Slug may not be blank [%s]" % str(self)
+        if self.slug == '': raise ValueError("Slug may not be blank [%s]" % str(self))
         super(SluggedModel,self).save(*args, **kwargs)
 
     def unique_slug(self):
@@ -36,7 +36,7 @@ class SluggedModel(models.Model):
             if hasattr(self,'get_slug_text') and callable(self.get_slug_text):
                 slug_txt = self.get_slug_text()
             elif hasattr(self,'__unicode__'):
-                slug_txt = unicode(self)
+                slug_txt = str(self)
             elif hasattr(self,'__str__'):
                 slug_txt = str(self)
             else:
@@ -93,7 +93,7 @@ class BoundarySet(SluggedModel):
         """
         Print plural names.
         """
-        return unicode(self.name)
+        return str(self.name)
 
 
 class Boundary(SluggedModel):
@@ -142,4 +142,4 @@ class Boundary(SluggedModel):
         Print names are formatted like "Austin Community Area"
         and will slug like "austin-community-area".
         """
-        return unicode(self.display_name)
+        return str(self.display_name)

@@ -60,7 +60,7 @@ class Command(BaseCommand):
         else:
             sources = [s for s in SHAPEFILES]
 
-        for kind, config in SHAPEFILES.items():
+        for kind, config in list(SHAPEFILES.items()):
             if kind not in sources:
                 log.info('Skipping %s.' % kind)
                 continue

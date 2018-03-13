@@ -6,11 +6,10 @@ import json
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 
-class ListField(models.TextField):
+class ListField(models.TextField, metaclass=models.SubfieldBase):
     """
     Store a list of values in a Model field.
     """
-    __metaclass__ = models.SubfieldBase
  
     def __init__(self, *args, **kwargs):
         self.separator = kwargs.pop('separator', ',')
@@ -30,19 +29,17 @@ class ListField(models.TextField):
         if not isinstance(value, list) and not isinstance(value, tuple):
             raise ValueError('Value for ListField must be either a list or tuple.')
 
-        return self.separator.join([unicode(s) for s in value])
+        return self.separator.join([str(s) for s in value])
  
     def value_to_string(self, obj):
         value = self._get_val_from_obj(obj)
 
         return self.get_prep_value(value)
 
-class JSONField(models.TextField):
+class JSONField(models.TextField, metaclass=models.SubfieldBase):
     """
     Store arbitrary JSON in a Model field.
     """
-    # Used so to_python() is called
-    __metaclass__ = models.SubfieldBase
 
     def to_python(self, value):
         """
@@ -52,7 +49,7 @@ class JSONField(models.TextField):
             return None
 
         try:
-            if isinstance(value, basestring):
+            if isinstance(value, str):
                 return json.loads(value)
         except ValueError:
             pass
