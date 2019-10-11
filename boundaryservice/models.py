@@ -101,7 +101,7 @@ class Boundary(SluggedModel):
     A boundary object, such as a Ward or Neighborhood.
     """
     set = models.ForeignKey(BoundarySet, related_name='boundaries',
-        help_text='Category of boundaries that this boundary belongs, e.g. "Community Areas".')
+        help_text='Category of boundaries that this boundary belongs, e.g. "Community Areas".', on_delete=models.CASCADE)
     kind = models.CharField(max_length=64,
         help_text='A copy of BoundarySet\'s "singular" value for purposes of slugging and inspection.')
     external_id = models.CharField(max_length=64,

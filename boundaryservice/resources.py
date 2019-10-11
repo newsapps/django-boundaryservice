@@ -38,7 +38,7 @@ class BoundarySetResource(SluggedResource):
 
 
 class BoundaryResource(SluggedResource):
-    set = fields.ForeignKey(BoundarySetResource, 'set')
+    set = fields.ForeignKey(BoundarySetResource, 'set', on_delete=models.CASCADE)
 
     class Meta:
         queryset = Boundary.objects.all()
