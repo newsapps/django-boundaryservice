@@ -39,12 +39,12 @@ class ListField(models.TextField):
 
         return self.get_prep_value(value)
 
-class JSONField(models.TextField, metaclass=models.SubfieldBase):
+class JSONField(models.TextField):
     """
     Store arbitrary JSON in a Model field.
     """
 
-    def to_python(self, value):
+    def from_db_value(self, value, expression, connection, context):
         """
         Convert string value to JSON after its loaded from the database.
         """
@@ -78,20 +78,3 @@ class JSONField(models.TextField, metaclass=models.SubfieldBase):
         value = self._get_val_from_obj(obj)
 
         return self.get_db_prep_value(value)
-
-try:
-    from south.modelsinspector import add_introspection_rules
-
-    add_introspection_rules([], ["^boundaryservice\.fields\.JSONField"])
-
-    add_introspection_rules([
-        (
-            [ListField],
-            [],
-            {
-                "separator": ["separator", {"default": ","}],
-            },
-        ),
-    ], ["^boundaryservice\.fields\.ListField"])
-except ImportError:
-    pass
