@@ -6,25 +6,28 @@ import json
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 
-class ListField(models.TextField, metaclass=models.SubfieldBase):
+
+class ListField(models.TextField):
     """
     Store a list of values in a Model field.
     """
- 
+
     def __init__(self, *args, **kwargs):
         self.separator = kwargs.pop('separator', ',')
         super(ListField, self).__init__(*args, **kwargs)
- 
-    def to_python(self, value):
-        if not value: return
+
+    def from_db_value(self, value, expression, connection, context):
+        if not value:
+            return value
 
         if isinstance(value, list):
             return value
 
         return value.split(self.separator)
- 
+
     def get_prep_value(self, value):
-        if not value: return
+        if not value:
+            return value
 
         if not isinstance(value, list) and not isinstance(value, tuple):
             raise ValueError('Value for ListField must be either a list or tuple.')
