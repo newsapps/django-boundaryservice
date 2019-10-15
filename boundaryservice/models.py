@@ -128,10 +128,6 @@ class Boundary(SluggedModel):
             null=True,
             help_text='(GeoDjango is disabled)')
 
-    if USE_GEODJANGO:
-        objects = models.GeoManager()
-    else:
-        objects = models.Manager()
 
     class Meta:
         ordering = ('kind', 'display_name')
