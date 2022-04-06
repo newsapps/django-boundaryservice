@@ -21,18 +21,10 @@ class Command(BaseCommand):
         $ python manage.py startshapedefinitions
     
     """
-    help = 'Create a new definitions.py file to configure shapefiles to be loaded into the database.'
-    custom_options = (
-        make_option('-f', '--force',
-            action='store_true', dest='force',
-            help='Force the creation of a new definitions.py, even if it already exists.'
-        ),
-        make_option('-d', '--data-dir', action='store', dest='data_dir', 
-            default=DEFAULT_SHAPEFILES_DIR,
-            help='Load shapefiles from this directory'
-        ),
+    help = (
+        "Create a new definitions.py file to configure shapefiles "
+        "to be loaded into the database."
     )
-    option_list = BaseCommand.option_list + custom_options
     
     def handle(self, *args, **options):
         if not os.path.exists(options['data_dir']):
@@ -44,6 +36,28 @@ class Command(BaseCommand):
         outfile.write(BOILERPLATE)
         outfile.close()
         logging.info('Created definitions.py in %s' % options['data_dir'])
+
+    def add_arguments(self, parser):
+
+        parser.add_argument(
+            "-f",
+            "--force",
+            action="store_true",
+            dest="force",
+            help=(
+                "Force the creation of a new definitions.py, "
+                "even if it already exists."
+            )
+        )
+
+        parser.add_argument(
+            "-d",
+            "--data-dir",
+            action="store",
+            dest="data_dir", 
+            default=DEFAULT_SHAPEFILES_DIR,
+            help="Load shapefiles from this directory"
+        )
 
 BOILERPLATE = """from datetime import date
 

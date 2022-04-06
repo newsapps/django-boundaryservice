@@ -20,23 +20,53 @@ GEOMETRY_COLUMN = 'shape'
 
 
 class Command(BaseCommand):
-    help = 'Import boundaries described by shapefiles.'
-    option_list = BaseCommand.option_list + (
-        make_option('-c', '--clear', action='store_true', dest='clear',
-            help='Clear all jurisdictions in the DB.'),
-        make_option('-d', '--data-dir', action='store', dest='data_dir',
+    help = "Import boundaries described by shapefiles."
+
+    def add_arguments(self, parser):
+        
+        parser.add_argument(
+            "-c",
+            "--clear",
+            action="store_true",
+            dest="clear",
+            help="Clear all jurisdictions in the DB"
+        )
+
+        parser.add_argument(
+            "-d",
+            "--data-dir",
+            action="store",
+            dest="data_dir",
             default=DEFAULT_SHAPEFILES_DIR,
-            help='Load shapefiles from this directory'),
-        make_option('-e', '--except', action='store', dest='except',
-                    default=False,
-                    help='Don\'t load these kinds of Areas, comma-delimited.'),
-        make_option('-o', '--only', action='store', dest='only',
-                    default=False,
-                    help='Only load these kinds of Areas, comma-delimited.'),
-        make_option('-u', '--database', action='store', dest='database',
-                    default=DEFAULT_DB_ALIAS,
-                    help='Specify a database to load shape data into.'),
-    )
+            help="Load shapefiles from this directory"
+        )
+
+        parser.add_argument(
+            "-e",
+            "--except",
+            action="store",
+            dest="except",
+            default=False,
+            help="Don't load these kinds of Areas, comma-delimited."
+        )
+
+        parser.add_argument(
+            "-o",
+            "--only",
+            action="store",
+            dest="only",
+            default=False,
+            help="Only load these kinds of Areas, comma-delimited."
+        )
+
+        parser.add_argument(
+            "-u",
+            "--database",
+            action="store",
+            dest="database",
+            default=DEFAULT_DB_ALIAS,
+            help="Specify a database to load shape data into."
+        )
 
     def get_version(self):
         return '0.1'
@@ -69,7 +99,7 @@ class Command(BaseCommand):
 
             self.load_set(kind, config, options)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def load_set(self, kind, config, options):
         log.info('Processing %s.' % kind)
 
@@ -140,7 +170,7 @@ class Command(BaseCommand):
 
     def add_boundaries_for_layer(self, config, layer, bset, database):
         # Get spatial reference system for the postgis geometry field
-        geometry_field = Boundary._meta.get_field_by_name(GEOMETRY_COLUMN)[0]
+        geometry_field = Boundary._meta.get_field(GEOMETRY_COLUMN)
         SpatialRefSys = connections[database].ops.spatial_ref_sys()
         db_srs = SpatialRefSys.objects.using(database).get(
             srid=geometry_field.srid).srs
