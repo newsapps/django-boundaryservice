@@ -3,9 +3,10 @@ from django.contrib import admin
 from tastypie.models import ApiAccess, ApiKey
 from boundaryservice.models import BoundarySet, Boundary
 
-if ('django.contrib.gis' in settings.INSTALLED_APPS):
+if "django.contrib.gis" in settings.INSTALLED_APPS:
     try:
         from django.contrib.gis.admin import OSMGeoAdmin
+
         BoundaryModelAdminParent = OSMGeoAdmin
     except:
         BoundaryModelAdminParent = admin.ModelAdmin
@@ -16,18 +17,45 @@ else:
 class ApiAccessAdmin(admin.ModelAdmin):
     pass
 
+
 admin.site.register(ApiAccess, ApiAccessAdmin)
 
 
 class BoundarySetAdmin(admin.ModelAdmin):
-    list_filter = ('authority', 'domain')
+    list_display = (
+        "pk",
+        "name",
+        "authority",
+        "domain",
+        "count",
+        "last_updated",
+    )
+    list_display_links = (
+        "pk",
+        "name",
+    )
+    list_filter = ("authority", "domain")
+
 
 admin.site.register(BoundarySet, BoundarySetAdmin)
 
 
 class BoundaryAdmin(BoundaryModelAdminParent):
-    list_display = ('kind', 'name', 'external_id')
-    list_display_links = ('name', 'external_id')
-    list_filter = ('kind',)
+    list_display = (
+        "pk",
+        "name",
+        "external_id",
+        "kind",
+        "set",
+    )
+    list_display_links = (
+        "pk",
+        "name",
+    )
+    list_filter = (
+        "kind",
+        "set",
+    )
+
 
 admin.site.register(Boundary, BoundaryAdmin)
