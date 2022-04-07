@@ -124,21 +124,27 @@ class Command(BaseCommand):
 
         layer = datasources[0][0]
 
-        # Create BoundarySet
-        log.info("Creating BoundarySet: %s" % kind)
-        bset = BoundarySet.objects.create(
-            name=kind,
-            singular=config['singular'],
-            kind_first=config['kind_first'],
-            authority=config['authority'],
-            domain=config['domain'],
-            last_updated=config['last_updated'],
-            href=config['href'],
-            notes=config['notes'],
-            count=0,
-            metadata_fields=layer.fields
-        )
-        log.info("Created with slug %s and id %s" % (bset.slug, bset.id))
+        try:
+            bset = BoundarySet.objects.get(
+                name=kind,
+                authority=config["authority"],
+            )
+        except BoundarySet.DoesNotExist:
+            # Create BoundarySet
+            log.info("Creating BoundarySet: %s" % kind)
+            bset = BoundarySet.objects.create(
+                name=kind,
+                singular=config['singular'],
+                kind_first=config['kind_first'],
+                authority=config['authority'],
+                domain=config['domain'],
+                last_updated=config['last_updated'],
+                href=config['href'],
+                notes=config['notes'],
+                count=0,
+                metadata_fields=layer.fields
+            )
+            log.info("Created with slug %s and id %s" % (bset.slug, bset.id))
         
         for datasource in datasources:
             log.info("Loading %s from %s" % (kind, datasource.name))
@@ -190,8 +196,11 @@ class Command(BaseCommand):
         # Create a convertor to turn the source data into
         transformer = CoordTransform(layer_srs, db_srs)
 
-        for feature in layer:
+        data = layer
+        num_features = len(data)
+        for count, feature in enumerate(data, 1):
             log.debug("Processing boundary %s" % feature)
+            print(f"Feature {count}/{num_features}")
             # Transform the geometry to the correct SRS
             geometry = self.polygon_to_multipolygon(feature.geom)
             geometry.transform(transformer)
